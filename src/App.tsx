@@ -10,6 +10,7 @@ import Subscribe from "./pages/Subscribe";
 import Success from "./pages/Success";
 import Dashboard from "./pages/Dashboard";
 import CreateNarrative from "./pages/CreateNarrative";
+import ViewNarrative from "./pages/ViewNarrative";
 import KnowledgeBase from "./pages/KnowledgeBase";
 import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
@@ -29,6 +30,7 @@ const App = () => (
           <Route path="/success" element={<Success />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/create-narrative" element={<CreateNarrative />} />
+          <Route path="/view-narrative/:id" element={<ViewNarrative />} />
           <Route path="/knowledge-base" element={<KnowledgeBase />} />
           <Route path="/settings" element={<Settings />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
