@@ -1,6 +1,5 @@
 
 import React from 'react';
-import { Card, CardContent } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface Message {
@@ -20,9 +19,23 @@ const ChatSession: React.FC<ChatSessionProps> = ({ messages }) => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
+  if (messages.length === 0) {
+    return (
+      <div className="h-full flex items-center justify-center">
+        <div className="text-center p-6">
+          <h3 className="font-semibold text-lg mb-2">Welcome to EMS Narrative Generator</h3>
+          <p className="text-muted-foreground">
+            Fill in the narrative details in the form below and click "Generate" to create a new narrative,
+            or ask a question in the chat to get assistance.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <ScrollArea className="h-[500px]">
-      <div className="flex flex-col gap-4 p-4">
+    <ScrollArea className="h-full px-4 py-6">
+      <div className="flex flex-col gap-4">
         {messages.map((message, index) => (
           <div 
             key={index} 
