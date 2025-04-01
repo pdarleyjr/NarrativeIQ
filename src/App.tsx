@@ -11,6 +11,7 @@ import Success from "./pages/Success";
 import Dashboard from "./pages/Dashboard";
 import CreateNarrative from "./pages/CreateNarrative";
 import KnowledgeBase from "./pages/KnowledgeBase";
+import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -29,6 +30,7 @@ const App = () => (
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/create-narrative" element={<CreateNarrative />} />
           <Route path="/knowledge-base" element={<KnowledgeBase />} />
+          <Route path="/settings" element={<Settings />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

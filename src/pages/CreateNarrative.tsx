@@ -3,7 +3,8 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useNavigate } from 'react-router-dom';
-import { FileText, ArrowLeft } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
+import NarrativeForm from '@/components/NarrativeForm';
 
 const CreateNarrative = () => {
   const navigate = useNavigate();
@@ -35,13 +36,7 @@ const CreateNarrative = () => {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="text-center py-16">
-              <FileText className="h-16 w-16 mx-auto mb-4 opacity-40" />
-              <p className="text-lg font-medium">Narrative Generator Coming Soon</p>
-              <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
-                This feature will allow you to create detailed, accurate EMS narratives using AI.
-              </p>
-            </div>
+            <NarrativeForm />
           </CardContent>
         </Card>
       </main>
