@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Copy, Download } from 'lucide-react';
+import { ArrowLeft, Copy, Download, Save } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from "sonner";
 
@@ -70,6 +70,16 @@ Care transferred to ED staff at 15:10.`,
     toast.success("Narrative downloaded");
   };
 
+  const handleSaveAsPreset = () => {
+    // This would normally extract the data from the narrative 
+    // and save it as a form preset
+    localStorage.setItem('narrative_preset', JSON.stringify({
+      title: narrative.title,
+      date: new Date().toISOString(),
+    }));
+    toast.success("Saved as preset for future narratives");
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* Header */}
@@ -99,6 +109,10 @@ Care transferred to ED staff at 15:10.`,
                 </CardDescription>
               </div>
               <div className="flex gap-2">
+                <Button variant="outline" size="sm" onClick={handleSaveAsPreset} className="flex items-center gap-1">
+                  <Save className="h-4 w-4" />
+                  Save As Preset
+                </Button>
                 <Button variant="outline" size="sm" onClick={handleCopyToClipboard} className="flex items-center gap-1">
                   <Copy className="h-4 w-4" />
                   Copy

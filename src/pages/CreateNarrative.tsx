@@ -5,12 +5,12 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent } from '@/components/ui/card';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Send, PlusCircle, ChevronRight, ChevronLeft } from 'lucide-react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { format } from 'date-fns';
 import { toast } from "sonner";
 import ChatSession from '@/components/ChatSession';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Drawer, DrawerContent, DrawerTrigger } from "@/components/ui/drawer";
+import EnhancedNarrativeForm from '@/components/EnhancedNarrativeForm';
 
 interface Message {
   type: 'user' | 'assistant';
@@ -26,48 +26,69 @@ interface Session {
   active?: boolean;
 }
 
+// Import the type from EnhancedNarrativeForm
 interface NarrativeFormData {
-  dispatch: string;
-  response: string;
-  arrival: string;
-  assessment: string;
-  treatment: string;
-  transport: string;
+  // Dispatch tab
+  unit: string;
+  dispatch_location: string;
+  
+  // Response tab
+  response_delay: boolean;
+  response_delay_reason: string;
+  
+  // Arrival tab
+  patient_sex: string;
+  patient_age: string;
+  chief_complaint: string;
+  duration: string;
+  patient_presentation: string;
+  
+  // Assessment tab
+  general_assessment: string;
+  denied_symptoms: boolean;
+  dcap_btls: boolean;
+  vitals_normal: boolean;
+  additional_assessment: string;
+  
+  // Treatment tab
+  treatment_provided: string;
+  add_protocol_treatments: boolean;
+  protocol_exclusions: string;
+  
+  // Transport tab
+  refused_transport: boolean;
+  refusal_details: string;
+  transport_destination: string;
+  transport_position: string;
+  room_number: string;
+  nurse_name: string;
+  unit_in_service: boolean;
+  
+  // Settings (pulled from the NarrativeOptions)
+  format_type: 'D.R.A.T.T.' | 'S.O.A.P.' | 'C.H.A.R.T.' | string;
+  use_abbreviations: boolean;
+  include_headers: boolean;
+  default_unit: string;
+  default_hospital: string;
+  custom_format: string;
 }
 
-interface NarrativeOptions {
-  format: 'standard' | 'chronological' | 'soap';
-  useAbbreviations: boolean;
-  includeHeaders: boolean;
+interface Preset {
+  id: string;
+  name: string;
+  data: NarrativeFormData;
 }
-
-const initialFormData: NarrativeFormData = {
-  dispatch: '',
-  response: '',
-  arrival: '',
-  assessment: '',
-  treatment: '',
-  transport: ''
-};
-
-const initialOptions: NarrativeOptions = {
-  format: 'standard',
-  useAbbreviations: true,
-  includeHeaders: true
-};
-
-const defaultAssessment = `Patient is AAOx4, GCS-15, PERRL, no LOC.\nLung sounds clear bilaterally.\nVitals within normal limits.\nNo signs of DCAP-BTLS.`;
 
 const CreateNarrative = () => {
   const navigate = useNavigate();
   const [userInput, setUserInput] = useState('');
-  const [formData, setFormData] = useState<NarrativeFormData>(initialFormData);
-  const [options, setOptions] = useState<NarrativeOptions>(initialOptions);
   const [sessions, setSessions] = useState<Session[]>([]);
   const [activeSession, setActiveSession] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [sidebarVisible, setSidebarVisible] = useState(true);
   const [activeTab, setActiveTab] = useState("dispatch");
+  const [presets, setPresets] = useState<Preset[]>([]);
+  const [selectedPreset, setSelectedPreset] = useState<NarrativeFormData | undefined>(undefined);
 
   // Mobile drawer state for sessions list on small screens
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
@@ -76,22 +97,16 @@ const CreateNarrative = () => {
     const newSessionId = createNewSession();
     setActiveSession(newSessionId);
     
-    const savedDraft = localStorage.getItem('narrative_draft');
-    if (savedDraft) {
+    // Load any saved presets
+    const savedPresets = localStorage.getItem('narrative_presets');
+    if (savedPresets) {
       try {
-        setFormData(JSON.parse(savedDraft));
+        setPresets(JSON.parse(savedPresets));
       } catch (error) {
-        console.error("Failed to parse saved draft", error);
+        console.error("Failed to parse saved presets", error);
       }
     }
   }, []);
-  
-  useEffect(() => {
-    const handler = setTimeout(() => {
-      localStorage.setItem('narrative_draft', JSON.stringify(formData));
-    }, 400);
-    return () => clearTimeout(handler);
-  }, [formData]);
   
   const createNewSession = () => {
     const id = `session-${Date.now()}`;
@@ -115,9 +130,9 @@ const CreateNarrative = () => {
   const handleNewSession = () => {
     const newSessionId = createNewSession();
     setActiveSession(newSessionId);
-    setFormData(initialFormData);
     setUserInput('');
     setIsDrawerOpen(false);
+    setSelectedPreset(undefined);
   };
   
   const handleSelectSession = (id: string) => {
@@ -153,14 +168,6 @@ const CreateNarrative = () => {
         }
       }
     }
-  };
-  
-  const handleInputChange = (field: keyof NarrativeFormData, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-  };
-  
-  const setNormalAssessment = () => {
-    handleInputChange('assessment', defaultAssessment);
   };
   
   const handleSendMessage = () => {
@@ -216,35 +223,50 @@ const CreateNarrative = () => {
     addMessageToSession(assistantMessage);
   };
   
-  const generateNarrative = () => {
+  const generateNarrative = (formData?: NarrativeFormData) => {
     if (!activeSession) return;
-    
-    if (!formData.dispatch || !formData.assessment) {
-      toast.error("Please fill in at least the Dispatch and Assessment fields");
-      return;
-    }
     
     const currentTime = format(new Date(), 'hh:mm a');
     
-    const mockResponse = `
-EMS NARRATIVE REPORT
-${options.includeHeaders ? '=== DISPATCH ===\n' : ''}
-Dispatched to ${formData.dispatch || '[location]'} for a medical emergency.
-
-${options.includeHeaders ? '=== RESPONSE ===\n' : ''}
-${formData.response || 'Unit responded without delay.'}
-
-${options.includeHeaders ? '=== ARRIVAL ===\n' : ''}
-Upon arrival, ${formData.arrival || 'found patient with the following complaints.'}
-
-${options.includeHeaders ? '=== ASSESSMENT ===\n' : ''}
-${formData.assessment || 'Patient assessment revealed...'}
-
-${options.includeHeaders ? '=== TREATMENT ===\n' : ''}
-${formData.treatment || 'Treatment provided according to protocol.'}
-
-${options.includeHeaders ? '=== TRANSPORT ===\n' : ''}
-${formData.transport || 'Patient transported to nearest appropriate facility.'}`;
+    // Mock response with info from the form
+    let mockResponse = "EMS NARRATIVE REPORT\n\n";
+    
+    if (formData) {
+      if (formData.include_headers) mockResponse += "=== DISPATCH ===\n";
+      mockResponse += `${formData.unit || 'Unit'} dispatched to ${formData.dispatch_location || '[location]'} for a medical emergency.\n\n`;
+      
+      if (formData.include_headers) mockResponse += "=== RESPONSE ===\n";
+      mockResponse += `${formData.response_delay ? 
+        `Unit responded with delay due to ${formData.response_delay_reason || 'unspecified reason'}.` : 
+        'Unit responded without delay.'}\n\n`;
+      
+      if (formData.include_headers) mockResponse += "=== ARRIVAL ===\n";
+      mockResponse += `Upon arrival, found ${formData.patient_sex || ''} ${formData.patient_age || ''} patient with chief complaint of ${formData.chief_complaint || '[complaint]'} for ${formData.duration || 'unknown duration'}. ${formData.patient_presentation || ''}\n\n`;
+      
+      if (formData.include_headers) mockResponse += "=== ASSESSMENT ===\n";
+      mockResponse += `${formData.general_assessment || ''}\n`;
+      if (formData.denied_symptoms) mockResponse += "Patient denied headache, nausea, vomiting, abdominal pain, diarrhea, chest pain, stroke-like symptoms, or any other pain/medical complaints.\n";
+      if (formData.dcap_btls) mockResponse += "Full assessment performed; no DCAP-BTLS noted throughout the body.\n";
+      if (formData.vitals_normal) mockResponse += "Vital signs checked and within normal limits for the patient.\n";
+      if (formData.additional_assessment) mockResponse += `${formData.additional_assessment}\n\n`;
+      else mockResponse += "\n";
+      
+      if (formData.include_headers) mockResponse += "=== TREATMENT ===\n";
+      mockResponse += `${formData.treatment_provided || 'No interventions required.'}\n\n`;
+      
+      if (formData.include_headers) mockResponse += "=== TRANSPORT ===\n";
+      if (formData.refused_transport) {
+        mockResponse += `Patient refused transport. ${formData.refusal_details || 'Risks of refusal explained to patient who demonstrated understanding and signed refusal form.'}\n\n`;
+      } else {
+        mockResponse += `Patient transported to ${formData.transport_destination || '[hospital]'} in ${formData.transport_position || 'position of comfort'}. Patient monitored en route with vitals reassessed. Patient left in Room #${formData.room_number || '[room]'} and care transferred to RN ${formData.nurse_name || '[name]'}.\n\n`;
+      }
+      
+      if (formData.unit_in_service) {
+        mockResponse += `${formData.unit || 'Unit'} returned to service.`;
+      }
+    } else {
+      mockResponse += "This is a sample narrative. To generate a custom narrative, please fill out the form fields below.";
+    }
 
     const assistantMessage: Message = {
       type: 'assistant',
@@ -254,6 +276,31 @@ ${formData.transport || 'Patient transported to nearest appropriate facility.'}`
     
     addMessageToSession(assistantMessage);
     toast.success("Narrative generated successfully");
+  };
+  
+  const handleSavePreset = (formData: NarrativeFormData) => {
+    const presetId = `preset-${Date.now()}`;
+    const newPreset: Preset = {
+      id: presetId,
+      name: `Preset ${format(new Date(), 'MMM d, yyyy hh:mm a')}`,
+      data: formData
+    };
+    
+    setPresets(prev => [...prev, newPreset]);
+    localStorage.setItem('narrative_presets', JSON.stringify([...presets, newPreset]));
+    toast.success("Preset saved successfully");
+  };
+  
+  const handleLoadPreset = () => {
+    if (presets.length === 0) {
+      toast.error("No presets available");
+      return;
+    }
+    
+    // In a real app, you would show a dialog to select a preset
+    // For now, just load the last preset
+    setSelectedPreset(presets[presets.length - 1].data);
+    toast.success("Preset loaded");
   };
   
   const activeSessionData = sessions.find(s => s.id === activeSession);
@@ -394,133 +441,29 @@ ${formData.transport || 'Patient transported to nearest appropriate facility.'}`
                 <div className="flex-1 overflow-hidden">
                   <ChatSession 
                     messages={activeSessionData?.messages || []}
+                    onSavePreset={handleLoadPreset}
                   />
                 </div>
                 {/* Collapsible Narrative Form */}
                 <div className="border-t border-gray-200 dark:border-gray-700">
                   <Collapsible className="w-full">
                     <div className="p-4 pb-0">
-                      <div className="flex justify-between items-center mb-2">
-                        <CollapsibleTrigger asChild>
-                          <Button variant="ghost" size="sm" className="h-7 px-2 text-xs">
-                            Narrative Settings & Fields
-                            <ChevronRight className="h-4 w-4 ml-1" />
-                          </Button>
-                        </CollapsibleTrigger>
-                        <div className="flex gap-2">
-                          <Button
-                            onClick={() => setOptions({
-                              ...options,
-                              useAbbreviations: !options.useAbbreviations
-                            })}
-                            variant={options.useAbbreviations ? "default" : "outline"}
-                            size="sm"
-                            className="h-7 text-xs"
-                          >
-                            Abbreviations: {options.useAbbreviations ? "On" : "Off"}
-                          </Button>
-                          <Button
-                            onClick={() => setOptions({
-                              ...options,
-                              includeHeaders: !options.includeHeaders
-                            })}
-                            variant={options.includeHeaders ? "default" : "outline"}
-                            size="sm"
-                            className="h-7 text-xs"
-                          >
-                            Headers: {options.includeHeaders ? "On" : "Off"}
-                          </Button>
-                          <div className="flex gap-1">
-                            {(['standard', 'chronological', 'soap'] as const).map((format) => (
-                              <Button 
-                                key={format}
-                                variant={options.format === format ? "default" : "outline"}
-                                size="sm"
-                                className="h-7 text-xs"
-                                onClick={() => setOptions({...options, format})}
-                              >
-                                {format.charAt(0).toUpperCase()}
-                              </Button>
-                            ))}
-                          </div>
-                        </div>
-                      </div>
+                      <CollapsibleTrigger asChild>
+                        <Button variant="ghost" size="sm" className="h-7 px-2 text-xs">
+                          Narrative Settings & Fields
+                          <ChevronRight className="h-4 w-4 ml-1" />
+                        </Button>
+                      </CollapsibleTrigger>
                     </div>
                     <CollapsibleContent>
                       <div className="p-4 pt-0">
-                        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                          <TabsList className="w-full justify-start overflow-auto mb-2">
-                            <TabsTrigger value="dispatch">Dispatch</TabsTrigger>
-                            <TabsTrigger value="response">Response</TabsTrigger>
-                            <TabsTrigger value="arrival">Arrival</TabsTrigger>
-                            <TabsTrigger value="assessment">Assessment</TabsTrigger>
-                            <TabsTrigger value="treatment">Treatment</TabsTrigger>
-                            <TabsTrigger value="transport">Transport</TabsTrigger>
-                          </TabsList>
-                          
-                          <TabsContent value="dispatch">
-                            <Textarea 
-                              placeholder="Enter dispatch details, location, nature of call..."
-                              value={formData.dispatch}
-                              onChange={(e) => handleInputChange('dispatch', e.target.value)}
-                              className="min-h-[100px]"
-                            />
-                          </TabsContent>
-                          
-                          <TabsContent value="response">
-                            <Textarea 
-                              placeholder="Describe your response, any delays, etc..."
-                              value={formData.response}
-                              onChange={(e) => handleInputChange('response', e.target.value)}
-                              className="min-h-[100px]"
-                            />
-                          </TabsContent>
-                          
-                          <TabsContent value="arrival">
-                            <Textarea 
-                              placeholder="Describe scene on arrival, patient's initial condition..."
-                              value={formData.arrival}
-                              onChange={(e) => handleInputChange('arrival', e.target.value)}
-                              className="min-h-[100px]"
-                            />
-                          </TabsContent>
-                          
-                          <TabsContent value="assessment">
-                            <div className="flex justify-end mb-2">
-                              <Button 
-                                variant="outline" 
-                                size="sm"
-                                onClick={setNormalAssessment}
-                              >
-                                Set Normal Findings
-                              </Button>
-                            </div>
-                            <Textarea 
-                              placeholder="Describe assessment findings, vitals, observations..."
-                              value={formData.assessment}
-                              onChange={(e) => handleInputChange('assessment', e.target.value)}
-                              className="min-h-[100px]"
-                            />
-                          </TabsContent>
-                          
-                          <TabsContent value="treatment">
-                            <Textarea 
-                              placeholder="Describe interventions, medications, procedures..."
-                              value={formData.treatment}
-                              onChange={(e) => handleInputChange('treatment', e.target.value)}
-                              className="min-h-[100px]"
-                            />
-                          </TabsContent>
-                          
-                          <TabsContent value="transport">
-                            <Textarea 
-                              placeholder="Describe transport destination, any incidents en route..."
-                              value={formData.transport}
-                              onChange={(e) => handleInputChange('transport', e.target.value)}
-                              className="min-h-[100px]"
-                            />
-                          </TabsContent>
-                        </Tabs>
+                        <EnhancedNarrativeForm
+                          onGenerateNarrative={generateNarrative}
+                          onSavePreset={handleSavePreset}
+                          loadPreset={selectedPreset}
+                          activeTab={activeTab}
+                          onTabChange={setActiveTab}
+                        />
                       </div>
                     </CollapsibleContent>
                   </Collapsible>
@@ -547,7 +490,7 @@ ${formData.transport || 'Patient transported to nearest appropriate facility.'}`
                         {isGenerating ? "..." : <Send className="h-4 w-4" />}
                       </Button>
                       <Button
-                        onClick={generateNarrative}
+                        onClick={() => generateNarrative()}
                         variant="outline"
                         className="flex-1"
                         disabled={isGenerating}

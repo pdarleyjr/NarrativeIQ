@@ -1,6 +1,8 @@
 
 import React from 'react';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 
 interface Message {
   type: 'user' | 'assistant';
@@ -10,9 +12,10 @@ interface Message {
 
 interface ChatSessionProps {
   messages: Message[];
+  onSavePreset?: () => void;
 }
 
-const ChatSession: React.FC<ChatSessionProps> = ({ messages }) => {
+const ChatSession: React.FC<ChatSessionProps> = ({ messages, onSavePreset }) => {
   const messagesEndRef = React.useRef<HTMLDivElement>(null);
 
   React.useEffect(() => {
@@ -24,10 +27,15 @@ const ChatSession: React.FC<ChatSessionProps> = ({ messages }) => {
       <div className="h-full flex items-center justify-center">
         <div className="text-center p-6">
           <h3 className="font-semibold text-lg mb-2">Welcome to EMS Narrative Generator</h3>
-          <p className="text-muted-foreground">
+          <p className="text-muted-foreground mb-4">
             Fill in the narrative details in the form below and click "Generate" to create a new narrative,
             or ask a question in the chat to get assistance.
           </p>
+          {onSavePreset && (
+            <Button variant="outline" onClick={onSavePreset} className="mt-2">
+              Load Saved Preset
+            </Button>
+          )}
         </div>
       </div>
     );
@@ -50,6 +58,16 @@ const ChatSession: React.FC<ChatSessionProps> = ({ messages }) => {
             >
               <div className="whitespace-pre-wrap">{message.content}</div>
               <div className="text-xs text-gray-400 mt-1">{message.timestamp}</div>
+              {message.type === 'assistant' && (
+                <div className="flex justify-end mt-2 gap-2">
+                  <Button size="sm" variant="ghost" className="h-7 px-2 text-xs">
+                    View in Analysis
+                  </Button>
+                  <Button size="sm" variant="ghost" className="h-7 px-2 text-xs">
+                    Save as Preset
+                  </Button>
+                </div>
+              )}
             </div>
           </div>
         ))}
