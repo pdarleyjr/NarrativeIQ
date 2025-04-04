@@ -8,12 +8,30 @@ import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { toast } from "sonner";
+import { ChevronDown } from 'lucide-react';
 
-// Define dropdown options based on sample narratives
-const unitOptions = ["R1", "R2", "R3", "M1", "M2", "M3", "E1", "E2", "E3", "S1", "S2"];
+// Response delay options
+const responseDelayOptions = [
+  "No response delays",
+  "Traffic",
+  "Weather conditions",
+  "Distance",
+  "Scene not secured",
+  "Change of location",
+  "Multiple calls",
+  "Vehicle issues",
+  "Staffing issues",
+  "Delayed notification",
+  "Other"
+];
+
+// Sex options
 const sexOptions = ["Male", "Female", "Other", "Unknown"];
-const ageGroups = ["Infant", "Child", "Adolescent", "Adult", "Elderly"];
+
+// Chief complaint options
 const chiefComplaintOptions = [
   "Shortness of breath",
   "Chest pain",
@@ -36,6 +54,8 @@ const chiefComplaintOptions = [
   "Dizziness",
   "Fever"
 ];
+
+// Duration options
 const durationOptions = [
   "< 1 hour", 
   "1-3 hours", 
@@ -53,18 +73,8 @@ const durationOptions = [
   "1 month", 
   "> 1 month"
 ];
-const hospitalOptions = [
-  "Mount Sinai Hospital",
-  "Baptist Medical Center",
-  "Memorial Hospital",
-  "St. Luke's Hospital",
-  "Mayo Clinic",
-  "University Hospital",
-  "County General Hospital",
-  "Community Regional Medical Center",
-  "Mercy Hospital",
-  "Good Samaritan Hospital"
-];
+
+// Transport position options
 const transportPositionOptions = [
   "Position of comfort",
   "Supine",
@@ -76,16 +86,58 @@ const transportPositionOptions = [
   "Reverse Trendelenburg",
   "Seated"
 ];
+
+// Narrative format options
 const narrativeFormatOptions = ["D.R.A.T.T.", "S.O.A.P.", "C.H.A.R.T."];
+
+// Pertinent negatives list
+const pertinentNegatives = [
+  "Headache",
+  "Nausea",
+  "Vomiting",
+  "Abdominal pain",
+  "Diarrhea",
+  "Chest pain",
+  "Stroke-like symptoms",
+  "Dizziness",
+  "Vision changes",
+  "Shortness of breath",
+  "Fever",
+  "Chills",
+  "Back pain",
+  "Joint pain",
+  "Rash",
+  "Swelling",
+  "Bleeding",
+  "Syncope",
+  "Weakness",
+  "Numbness/tingling",
+  "Other medical complaints"
+];
+
+// Abnormal vital signs options
+const abnormalVitalSigns = [
+  "Hypertensive",
+  "Hypotensive",
+  "Tachycardic",
+  "Bradycardic",
+  "Tachypneic",
+  "Bradypneic",
+  "Febrile",
+  "Hypothermic",
+  "Hypoxic",
+  "Hyperglycemic",
+  "Hypoglycemic"
+];
 
 interface NarrativeFormData {
   // Dispatch tab
   unit: string;
-  dispatch_location: string;
+  dispatch_reason: string;
   
   // Response tab
-  response_delay: boolean;
-  response_delay_reason: string;
+  response_delay: string;
+  response_delay_custom: string;
   
   // Arrival tab
   patient_sex: string;
@@ -95,10 +147,19 @@ interface NarrativeFormData {
   patient_presentation: string;
   
   // Assessment tab
-  general_assessment: string;
-  denied_symptoms: boolean;
+  aao_person: boolean;
+  aao_place: boolean;
+  aao_time: boolean;
+  aao_event: boolean;
+  is_unresponsive: boolean;
+  gcs_score: string;
+  pupils: string;
+  selected_pertinent_negatives: string[];
+  unable_to_obtain_negatives: boolean;
+  vital_signs_normal: boolean;
+  selected_abnormal_vitals: string[];
+  all_other_vitals_normal: boolean;
   dcap_btls: boolean;
-  vitals_normal: boolean;
   additional_assessment: string;
   
   // Treatment tab
@@ -115,7 +176,7 @@ interface NarrativeFormData {
   nurse_name: string;
   unit_in_service: boolean;
   
-  // Settings (pulled from the NarrativeOptions)
+  // Settings
   format_type: 'D.R.A.T.T.' | 'S.O.A.P.' | 'C.H.A.R.T.' | string;
   use_abbreviations: boolean;
   include_headers: boolean;
@@ -126,18 +187,27 @@ interface NarrativeFormData {
 
 const initialFormData: NarrativeFormData = {
   unit: '',
-  dispatch_location: '',
-  response_delay: false,
-  response_delay_reason: '',
+  dispatch_reason: '',
+  response_delay: 'No response delays',
+  response_delay_custom: '',
   patient_sex: '',
   patient_age: '',
   chief_complaint: '',
   duration: '',
   patient_presentation: '',
-  general_assessment: 'Patient was AAOx4, GCS-15, PERRL, -LOC.',
-  denied_symptoms: true,
+  aao_person: true,
+  aao_place: true,
+  aao_time: true,
+  aao_event: true,
+  is_unresponsive: false,
+  gcs_score: '15',
+  pupils: 'PERRL',
+  selected_pertinent_negatives: [],
+  unable_to_obtain_negatives: false,
+  vital_signs_normal: true,
+  selected_abnormal_vitals: [],
+  all_other_vitals_normal: true,
   dcap_btls: true,
-  vitals_normal: true,
   additional_assessment: '',
   treatment_provided: '',
   add_protocol_treatments: false,
@@ -152,8 +222,8 @@ const initialFormData: NarrativeFormData = {
   format_type: 'D.R.A.T.T.',
   use_abbreviations: true,
   include_headers: true,
-  default_unit: 'R1',
-  default_hospital: 'Mount Sinai Hospital',
+  default_unit: '',
+  default_hospital: '',
   custom_format: ''
 };
 
@@ -213,12 +283,112 @@ const EnhancedNarrativeForm: React.FC<EnhancedNarrativeFormProps> = ({
   const handleInputChange = (field: keyof NarrativeFormData, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
-  
+
+  // Toggle specific pertinent negative
+  const togglePertinentNegative = (negative: string) => {
+    setFormData(prev => {
+      const currentNegatives = [...prev.selected_pertinent_negatives];
+      if (currentNegatives.includes(negative)) {
+        return {
+          ...prev,
+          selected_pertinent_negatives: currentNegatives.filter(n => n !== negative)
+        };
+      } else {
+        return {
+          ...prev,
+          selected_pertinent_negatives: [...currentNegatives, negative]
+        };
+      }
+    });
+  };
+
+  // Toggle all pertinent negatives
+  const toggleAllPertinentNegatives = (checked: boolean) => {
+    setFormData(prev => ({
+      ...prev,
+      selected_pertinent_negatives: checked ? [...pertinentNegatives] : []
+    }));
+  };
+
+  // Toggle specific abnormal vital sign
+  const toggleAbnormalVitalSign = (vitalSign: string) => {
+    setFormData(prev => {
+      const currentVitalSigns = [...prev.selected_abnormal_vitals];
+      if (currentVitalSigns.includes(vitalSign)) {
+        return {
+          ...prev,
+          selected_abnormal_vitals: currentVitalSigns.filter(v => v !== vitalSign)
+        };
+      } else {
+        return {
+          ...prev,
+          selected_abnormal_vitals: [...currentVitalSigns, vitalSign]
+        };
+      }
+    });
+  };
+
+  // Set normal assessment findings
   const setNormalAssessment = () => {
-    handleInputChange('general_assessment', 'Patient was AAOx4, GCS-15, PERRL, -LOC.');
-    handleInputChange('denied_symptoms', true);
-    handleInputChange('dcap_btls', true);
-    handleInputChange('vitals_normal', true);
+    setFormData(prev => ({
+      ...prev,
+      aao_person: true,
+      aao_place: true,
+      aao_time: true,
+      aao_event: true,
+      is_unresponsive: false,
+      gcs_score: '15',
+      pupils: 'PERRL',
+      selected_pertinent_negatives: [...pertinentNegatives],
+      unable_to_obtain_negatives: false,
+      vital_signs_normal: true,
+      selected_abnormal_vitals: [],
+      all_other_vitals_normal: true,
+      dcap_btls: true,
+      additional_assessment: ''
+    }));
+  };
+
+  // Set worst assessment findings
+  const setWorstAssessment = () => {
+    setFormData(prev => ({
+      ...prev,
+      aao_person: false,
+      aao_place: false,
+      aao_time: false,
+      aao_event: false,
+      is_unresponsive: true,
+      gcs_score: '3',
+      pupils: 'Unreactive',
+      selected_pertinent_negatives: [],
+      unable_to_obtain_negatives: true,
+      vital_signs_normal: false,
+      selected_abnormal_vitals: ['Hypotensive', 'Tachycardic', 'Tachypneic', 'Hypoxic'],
+      all_other_vitals_normal: false,
+      dcap_btls: false,
+      additional_assessment: 'Patient in critical condition requiring immediate intervention.'
+    }));
+  };
+
+  // Toggle unresponsive state
+  const toggleUnresponsiveState = (checked: boolean) => {
+    if (checked) {
+      setFormData(prev => ({
+        ...prev,
+        is_unresponsive: true,
+        aao_person: false,
+        aao_place: false,
+        aao_time: false,
+        aao_event: false,
+        unable_to_obtain_negatives: true
+      }));
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        is_unresponsive: false,
+        unable_to_obtain_negatives: false
+      }));
+    }
   };
   
   const handleGenerateNarrative = () => {
@@ -238,6 +408,34 @@ const EnhancedNarrativeForm: React.FC<EnhancedNarrativeFormProps> = ({
 
   return (
     <div className="space-y-2">
+      <div className="flex justify-between items-center mb-2">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" size="sm">
+              Quick Prefill <ChevronDown className="h-4 w-4 ml-1" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent>
+            <DropdownMenuItem onClick={setNormalAssessment}>
+              Normal Findings
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={setWorstAssessment}>
+              Critical Findings
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={handleSavePreset}>
+              Save Current as Preset
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+        
+        <Button 
+          size="sm" 
+          onClick={handleGenerateNarrative}
+        >
+          Generate Narrative
+        </Button>
+      </div>
+
       <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
         <TabsList className="w-full justify-start overflow-auto">
           <TabsTrigger value="dispatch">Dispatch</TabsTrigger>
@@ -253,47 +451,51 @@ const EnhancedNarrativeForm: React.FC<EnhancedNarrativeFormProps> = ({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div className="space-y-1">
               <Label htmlFor="unit">🔹 Unit</Label>
-              <Select value={formData.unit} onValueChange={(value) => handleInputChange('unit', value)}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select unit" />
-                </SelectTrigger>
-                <SelectContent>
-                  {unitOptions.map((option) => (
-                    <SelectItem key={option} value={option}>{option}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Input 
+                id="unit" 
+                placeholder="Enter unit designation"
+                value={formData.unit}
+                onChange={(e) => handleInputChange('unit', e.target.value)}
+              />
             </div>
             <div className="space-y-1">
-              <Label htmlFor="dispatch_location">🔹 Dispatched to</Label>
+              <Label htmlFor="dispatch_reason">🔹 Dispatched for</Label>
               <Input 
-                id="dispatch_location" 
-                placeholder="Enter location"
-                value={formData.dispatch_location}
-                onChange={(e) => handleInputChange('dispatch_location', e.target.value)}
+                id="dispatch_reason" 
+                placeholder="Chief complaint from dispatch"
+                value={formData.dispatch_reason}
+                onChange={(e) => handleInputChange('dispatch_reason', e.target.value)}
               />
             </div>
           </div>
         </TabsContent>
         
         <TabsContent value="response" className="pt-2 space-y-3">
-          <div className="flex items-center space-x-2 mb-2">
-            <Checkbox 
-              id="response_delay" 
-              checked={formData.response_delay}
-              onCheckedChange={(checked) => handleInputChange('response_delay', checked)}
-            />
-            <Label htmlFor="response_delay">🔹 Any response delays?</Label>
+          <div className="space-y-1">
+            <Label htmlFor="response_delay">🔹 Response Information</Label>
+            <Select 
+              value={formData.response_delay}
+              onValueChange={(value) => handleInputChange('response_delay', value)}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select response status" />
+              </SelectTrigger>
+              <SelectContent>
+                {responseDelayOptions.map((option) => (
+                  <SelectItem key={option} value={option}>{option}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
           
-          {formData.response_delay && (
+          {formData.response_delay === 'Other' && (
             <div className="space-y-1">
-              <Label htmlFor="response_delay_reason">Specify reason</Label>
+              <Label htmlFor="response_delay_custom">Specify reason</Label>
               <Textarea 
-                id="response_delay_reason"
+                id="response_delay_custom"
                 placeholder="Enter the reason for the response delay"
-                value={formData.response_delay_reason}
-                onChange={(e) => handleInputChange('response_delay_reason', e.target.value)}
+                value={formData.response_delay_custom}
+                onChange={(e) => handleInputChange('response_delay_custom', e.target.value)}
               />
             </div>
           )}
@@ -329,7 +531,7 @@ const EnhancedNarrativeForm: React.FC<EnhancedNarrativeFormProps> = ({
             <Label htmlFor="chief_complaint">🔹 Chief Complaint / Presenting Problem</Label>
             <Select value={formData.chief_complaint} onValueChange={(value) => handleInputChange('chief_complaint', value)}>
               <SelectTrigger>
-                <SelectValue placeholder="Select or type chief complaint" />
+                <SelectValue placeholder="Select chief complaint" />
               </SelectTrigger>
               <SelectContent>
                 {chiefComplaintOptions.map((option) => (
@@ -373,56 +575,218 @@ const EnhancedNarrativeForm: React.FC<EnhancedNarrativeFormProps> = ({
         
         <TabsContent value="assessment" className="pt-2 space-y-3">
           <div className="flex justify-between items-center mb-2">
-            <Label htmlFor="general_assessment">🔹 General</Label>
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={setNormalAssessment}
-            >
-              Set Normal Findings
-            </Button>
+            <Label className="text-sm font-medium">🔹 Mental Status Assessment</Label>
+            <div className="flex gap-2">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={setNormalAssessment}
+              >
+                Set Normal Findings
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={setWorstAssessment}
+                className="text-destructive border-destructive hover:bg-destructive/10"
+              >
+                Set Critical Findings
+              </Button>
+            </div>
           </div>
-          <Textarea 
-            id="general_assessment"
-            placeholder="General assessment findings"
-            value={formData.general_assessment}
-            onChange={(e) => handleInputChange('general_assessment', e.target.value)}
-            rows={2}
-          />
           
-          <div className="space-y-2">
-            <div className="flex items-center space-x-2">
+          <div className="p-3 border rounded-md space-y-3">
+            <div className="flex items-center space-x-2 mb-2">
               <Checkbox 
-                id="denied_symptoms" 
-                checked={formData.denied_symptoms}
-                onCheckedChange={(checked) => handleInputChange('denied_symptoms', checked)}
+                id="unresponsive" 
+                checked={formData.is_unresponsive}
+                onCheckedChange={(checked) => toggleUnresponsiveState(checked === true)}
               />
-              <Label htmlFor="denied_symptoms">
-                🔹 Patient denied: headache, nausea, vomiting, abdominal pain, diarrhea, chest pain, stroke-like symptoms, or any other pain/medical complaints.
+              <Label htmlFor="unresponsive" className="font-medium text-destructive">
+                Patient Unresponsive
               </Label>
             </div>
             
-            <div className="flex items-center space-x-2">
+            {!formData.is_unresponsive && (
+              <div className="space-y-2">
+                <Label className="text-sm">Orientation Status (AAO)</Label>
+                <div className="flex gap-2 flex-wrap">
+                  <ToggleGroup type="multiple" className="justify-start">
+                    <ToggleGroupItem 
+                      value="person" 
+                      aria-label="Toggle Person"
+                      data-state={formData.aao_person ? "on" : "off"}
+                      onClick={() => handleInputChange('aao_person', !formData.aao_person)}
+                    >
+                      Person
+                    </ToggleGroupItem>
+                    <ToggleGroupItem 
+                      value="place" 
+                      aria-label="Toggle Place"
+                      data-state={formData.aao_place ? "on" : "off"}
+                      onClick={() => handleInputChange('aao_place', !formData.aao_place)}
+                    >
+                      Place
+                    </ToggleGroupItem>
+                    <ToggleGroupItem 
+                      value="time" 
+                      aria-label="Toggle Time"
+                      data-state={formData.aao_time ? "on" : "off"}
+                      onClick={() => handleInputChange('aao_time', !formData.aao_time)}
+                    >
+                      Time
+                    </ToggleGroupItem>
+                    <ToggleGroupItem 
+                      value="event" 
+                      aria-label="Toggle Event"
+                      data-state={formData.aao_event ? "on" : "off"}
+                      onClick={() => handleInputChange('aao_event', !formData.aao_event)}
+                    >
+                      Event
+                    </ToggleGroupItem>
+                  </ToggleGroup>
+                </div>
+              
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mt-2">
+                  <div className="space-y-1">
+                    <Label htmlFor="gcs_score">GCS Score</Label>
+                    <Select 
+                      value={formData.gcs_score}
+                      onValueChange={(value) => handleInputChange('gcs_score', value)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select GCS" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {Array.from({length: 13}, (_, i) => (i + 3).toString()).map((score) => (
+                          <SelectItem key={score} value={score}>{score}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1">
+                    <Label htmlFor="pupils">Pupils</Label>
+                    <Select 
+                      value={formData.pupils}
+                      onValueChange={(value) => handleInputChange('pupils', value)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select pupil response" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="PERRL">PERRL</SelectItem>
+                        <SelectItem value="PERRLA">PERRLA</SelectItem>
+                        <SelectItem value="Sluggish">Sluggish</SelectItem>
+                        <SelectItem value="Unreactive">Unreactive</SelectItem>
+                        <SelectItem value="Unequal">Unequal</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+          
+          <div className="p-3 border rounded-md space-y-3">
+            <div className="flex justify-between items-center">
+              <Label className="text-sm font-medium">🔹 Pertinent Negatives</Label>
+              <div className="flex items-center space-x-2">
+                <Checkbox 
+                  id="select_all_negatives" 
+                  checked={formData.selected_pertinent_negatives.length === pertinentNegatives.length}
+                  onCheckedChange={(checked) => toggleAllPertinentNegatives(checked === true)}
+                  disabled={formData.unable_to_obtain_negatives}
+                />
+                <Label htmlFor="select_all_negatives" className="text-xs">Select All</Label>
+              </div>
+            </div>
+            
+            <div className="flex items-center space-x-2 mt-2">
               <Checkbox 
-                id="dcap_btls" 
-                checked={formData.dcap_btls}
-                onCheckedChange={(checked) => handleInputChange('dcap_btls', checked)}
+                id="unable_obtain_negatives" 
+                checked={formData.unable_to_obtain_negatives}
+                onCheckedChange={(checked) => handleInputChange('unable_to_obtain_negatives', checked === true)}
               />
-              <Label htmlFor="dcap_btls">
-                🔹 Full assessment performed; no DCAP-BTLS noted throughout the body.
+              <Label htmlFor="unable_obtain_negatives" className="text-sm">
+                Unable to obtain (patient unresponsive/unable to communicate)
               </Label>
             </div>
+            
+            {!formData.unable_to_obtain_negatives && (
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-1 mt-2">
+                {pertinentNegatives.map((negative) => (
+                  <div key={negative} className="flex items-center space-x-2">
+                    <Checkbox 
+                      id={`negative-${negative}`} 
+                      checked={formData.selected_pertinent_negatives.includes(negative)}
+                      onCheckedChange={() => togglePertinentNegative(negative)}
+                    />
+                    <Label htmlFor={`negative-${negative}`} className="text-xs">{negative}</Label>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+          
+          <div className="p-3 border rounded-md space-y-3">
+            <Label className="text-sm font-medium">🔹 Vital Signs</Label>
             
             <div className="flex items-center space-x-2">
               <Checkbox 
                 id="vitals_normal" 
-                checked={formData.vitals_normal}
-                onCheckedChange={(checked) => handleInputChange('vitals_normal', checked)}
+                checked={formData.vital_signs_normal}
+                onCheckedChange={(checked) => {
+                  const isChecked = checked === true;
+                  handleInputChange('vital_signs_normal', isChecked);
+                  if (isChecked) {
+                    handleInputChange('selected_abnormal_vitals', []);
+                  }
+                }}
               />
-              <Label htmlFor="vitals_normal">
-                🔹 Vital signs checked and within normal limits for the patient.
+              <Label htmlFor="vitals_normal" className="text-sm">
+                Vital signs checked and within normal limits for the patient.
               </Label>
             </div>
+            
+            {!formData.vital_signs_normal && (
+              <>
+                <Label className="text-sm">Abnormal Vital Signs</Label>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-1">
+                  {abnormalVitalSigns.map((vitalSign) => (
+                    <div key={vitalSign} className="flex items-center space-x-2">
+                      <Checkbox 
+                        id={`vitals-${vitalSign}`} 
+                        checked={formData.selected_abnormal_vitals.includes(vitalSign)}
+                        onCheckedChange={() => toggleAbnormalVitalSign(vitalSign)}
+                      />
+                      <Label htmlFor={`vitals-${vitalSign}`} className="text-xs">{vitalSign}</Label>
+                    </div>
+                  ))}
+                </div>
+                
+                <div className="flex items-center space-x-2 mt-2">
+                  <Checkbox 
+                    id="all_other_vitals_normal" 
+                    checked={formData.all_other_vitals_normal}
+                    onCheckedChange={(checked) => handleInputChange('all_other_vitals_normal', checked === true)}
+                  />
+                  <Label htmlFor="all_other_vitals_normal" className="text-sm">
+                    All other vital signs within normal limits
+                  </Label>
+                </div>
+              </>
+            )}
+          </div>
+          
+          <div className="flex items-center space-x-2">
+            <Checkbox 
+              id="dcap_btls" 
+              checked={formData.dcap_btls}
+              onCheckedChange={(checked) => handleInputChange('dcap_btls', checked === true)}
+            />
+            <Label htmlFor="dcap_btls" className="text-sm">
+              🔹 Full assessment performed; no DCAP-BTLS noted throughout the body.
+            </Label>
           </div>
           
           <div className="space-y-1">
@@ -453,7 +817,7 @@ const EnhancedNarrativeForm: React.FC<EnhancedNarrativeFormProps> = ({
             <Checkbox 
               id="add_protocol_treatments" 
               checked={formData.add_protocol_treatments}
-              onCheckedChange={(checked) => handleInputChange('add_protocol_treatments', checked)}
+              onCheckedChange={(checked) => handleInputChange('add_protocol_treatments', checked === true)}
             />
             <Label htmlFor="add_protocol_treatments">
               Add medications and dosages along with any other recommended treatments per protocol
@@ -479,7 +843,7 @@ const EnhancedNarrativeForm: React.FC<EnhancedNarrativeFormProps> = ({
             <Checkbox 
               id="refused_transport" 
               checked={formData.refused_transport}
-              onCheckedChange={(checked) => handleInputChange('refused_transport', checked)}
+              onCheckedChange={(checked) => handleInputChange('refused_transport', checked === true)}
             />
             <Label htmlFor="refused_transport" className="text-red-500 font-medium">
               🛑 Did the patient refuse transport?
@@ -501,19 +865,9 @@ const EnhancedNarrativeForm: React.FC<EnhancedNarrativeFormProps> = ({
             <>
               <div className="space-y-1">
                 <Label htmlFor="transport_destination">🔹 Transported to</Label>
-                <Select value={formData.transport_destination} onValueChange={(value) => handleInputChange('transport_destination', value)}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select hospital" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {hospitalOptions.map((option) => (
-                      <SelectItem key={option} value={option}>{option}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
                 <Input 
-                  className="mt-1"
-                  placeholder="Or type custom destination"
+                  id="transport_destination"
+                  placeholder="Enter hospital or facility"
                   value={formData.transport_destination}
                   onChange={(e) => handleInputChange('transport_destination', e.target.value)}
                 />
@@ -571,7 +925,7 @@ const EnhancedNarrativeForm: React.FC<EnhancedNarrativeFormProps> = ({
             <Checkbox 
               id="unit_in_service" 
               checked={formData.unit_in_service}
-              onCheckedChange={(checked) => handleInputChange('unit_in_service', checked)}
+              onCheckedChange={(checked) => handleInputChange('unit_in_service', checked === true)}
             />
             <Label htmlFor="unit_in_service">
               🔹 Unit {formData.unit || formData.default_unit} returned in service.
@@ -584,30 +938,22 @@ const EnhancedNarrativeForm: React.FC<EnhancedNarrativeFormProps> = ({
             <div className="space-y-3">
               <div className="space-y-1">
                 <Label htmlFor="default_unit">Default Unit</Label>
-                <Select value={formData.default_unit} onValueChange={(value) => handleInputChange('default_unit', value)}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select default unit" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {unitOptions.map((option) => (
-                      <SelectItem key={option} value={option}>{option}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Input 
+                  id="default_unit"
+                  placeholder="Enter default unit designation"
+                  value={formData.default_unit}
+                  onChange={(e) => handleInputChange('default_unit', e.target.value)}
+                />
               </div>
               
               <div className="space-y-1">
                 <Label htmlFor="default_hospital">Default Hospital</Label>
-                <Select value={formData.default_hospital} onValueChange={(value) => handleInputChange('default_hospital', value)}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select default hospital" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {hospitalOptions.map((option) => (
-                      <SelectItem key={option} value={option}>{option}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Input 
+                  id="default_hospital"
+                  placeholder="Enter default hospital name"
+                  value={formData.default_hospital}
+                  onChange={(e) => handleInputChange('default_hospital', e.target.value)}
+                />
               </div>
             </div>
             
@@ -656,18 +1002,6 @@ const EnhancedNarrativeForm: React.FC<EnhancedNarrativeFormProps> = ({
                 </div>
               </div>
             </div>
-          </div>
-          
-          <div className="flex justify-between mt-4">
-            <Button 
-              variant="outline" 
-              onClick={handleSavePreset}
-            >
-              Save as Preset
-            </Button>
-            <Button onClick={handleGenerateNarrative}>
-              Generate Narrative
-            </Button>
           </div>
         </TabsContent>
       </Tabs>

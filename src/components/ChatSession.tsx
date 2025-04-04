@@ -3,6 +3,8 @@ import React from 'react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { ChevronDown } from 'lucide-react';
 
 interface Message {
   type: 'user' | 'assistant';
@@ -13,9 +15,10 @@ interface Message {
 interface ChatSessionProps {
   messages: Message[];
   onSavePreset?: () => void;
+  onViewInAnalysis?: (content: string) => void;
 }
 
-const ChatSession: React.FC<ChatSessionProps> = ({ messages, onSavePreset }) => {
+const ChatSession: React.FC<ChatSessionProps> = ({ messages, onSavePreset, onViewInAnalysis }) => {
   const messagesEndRef = React.useRef<HTMLDivElement>(null);
 
   React.useEffect(() => {
@@ -60,12 +63,26 @@ const ChatSession: React.FC<ChatSessionProps> = ({ messages, onSavePreset }) => 
               <div className="text-xs text-gray-400 mt-1">{message.timestamp}</div>
               {message.type === 'assistant' && (
                 <div className="flex justify-end mt-2 gap-2">
-                  <Button size="sm" variant="ghost" className="h-7 px-2 text-xs">
-                    View in Analysis
-                  </Button>
-                  <Button size="sm" variant="ghost" className="h-7 px-2 text-xs">
-                    Save as Preset
-                  </Button>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button size="sm" variant="ghost" className="h-7 px-2 text-xs">
+                        Actions <ChevronDown className="h-3 w-3 ml-1" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent>
+                      <DropdownMenuItem 
+                        onClick={() => onViewInAnalysis && onViewInAnalysis(message.content)}>
+                        View in Analysis
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => onSavePreset && onSavePreset()}>
+                        Save as Preset
+                      </DropdownMenuItem>
+                      <DropdownMenuItem 
+                        onClick={() => navigator.clipboard.writeText(message.content)}>
+                        Copy to Clipboard
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </div>
               )}
             </div>
