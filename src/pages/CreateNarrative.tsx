@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -26,36 +25,38 @@ interface Session {
   active?: boolean;
 }
 
-// Import the type from EnhancedNarrativeForm
 interface NarrativeFormData {
-  // Dispatch tab
   unit: string;
-  dispatch_location: string;
+  dispatch_reason: string;
   
-  // Response tab
-  response_delay: boolean;
-  response_delay_reason: string;
+  response_delay: string;
+  response_delay_custom: string;
   
-  // Arrival tab
   patient_sex: string;
   patient_age: string;
   chief_complaint: string;
   duration: string;
   patient_presentation: string;
   
-  // Assessment tab
-  general_assessment: string;
-  denied_symptoms: boolean;
+  aao_person: boolean;
+  aao_place: boolean;
+  aao_time: boolean;
+  aao_event: boolean;
+  is_unresponsive: boolean;
+  gcs_score: string;
+  pupils: string;
+  selected_pertinent_negatives: string[];
+  unable_to_obtain_negatives: boolean;
+  vital_signs_normal: boolean;
+  selected_abnormal_vitals: string[];
+  all_other_vitals_normal: boolean;
   dcap_btls: boolean;
-  vitals_normal: boolean;
   additional_assessment: string;
   
-  // Treatment tab
   treatment_provided: string;
   add_protocol_treatments: boolean;
   protocol_exclusions: string;
   
-  // Transport tab
   refused_transport: boolean;
   refusal_details: string;
   transport_destination: string;
@@ -64,7 +65,6 @@ interface NarrativeFormData {
   nurse_name: string;
   unit_in_service: boolean;
   
-  // Settings (pulled from the NarrativeOptions)
   format_type: 'D.R.A.T.T.' | 'S.O.A.P.' | 'C.H.A.R.T.' | string;
   use_abbreviations: boolean;
   include_headers: boolean;
@@ -90,24 +90,6 @@ const CreateNarrative = () => {
   const [presets, setPresets] = useState<Preset[]>([]);
   const [selectedPreset, setSelectedPreset] = useState<NarrativeFormData | undefined>(undefined);
 
-  // Mobile drawer state for sessions list on small screens
-  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
-  
-  useEffect(() => {
-    const newSessionId = createNewSession();
-    setActiveSession(newSessionId);
-    
-    // Load any saved presets
-    const savedPresets = localStorage.getItem('narrative_presets');
-    if (savedPresets) {
-      try {
-        setPresets(JSON.parse(savedPresets));
-      } catch (error) {
-        console.error("Failed to parse saved presets", error);
-      }
-    }
-  }, []);
-  
   const createNewSession = () => {
     const id = `session-${Date.now()}`;
     const date = new Date();
@@ -223,36 +205,82 @@ const CreateNarrative = () => {
     addMessageToSession(assistantMessage);
   };
   
-  const generateNarrative = (formData?: NarrativeFormData) => {
+  const generateNarrative = (formData: NarrativeFormData) => {
     if (!activeSession) return;
     
     const currentTime = format(new Date(), 'hh:mm a');
     
-    // Mock response with info from the form
     let mockResponse = "EMS NARRATIVE REPORT\n\n";
     
     if (formData) {
       if (formData.include_headers) mockResponse += "=== DISPATCH ===\n";
-      mockResponse += `${formData.unit || 'Unit'} dispatched to ${formData.dispatch_location || '[location]'} for a medical emergency.\n\n`;
+      mockResponse += `${formData.unit || 'Unit'} dispatched to ${formData.dispatch_reason || '[location]'} for a medical emergency.\n\n`;
       
       if (formData.include_headers) mockResponse += "=== RESPONSE ===\n";
-      mockResponse += `${formData.response_delay ? 
-        `Unit responded with delay due to ${formData.response_delay_reason || 'unspecified reason'}.` : 
+      mockResponse += `${formData.response_delay !== 'No response delays' ? 
+        `Unit responded with delay due to ${formData.response_delay_custom || formData.response_delay || 'unspecified reason'}.` : 
         'Unit responded without delay.'}\n\n`;
       
       if (formData.include_headers) mockResponse += "=== ARRIVAL ===\n";
       mockResponse += `Upon arrival, found ${formData.patient_sex || ''} ${formData.patient_age || ''} patient with chief complaint of ${formData.chief_complaint || '[complaint]'} for ${formData.duration || 'unknown duration'}. ${formData.patient_presentation || ''}\n\n`;
       
       if (formData.include_headers) mockResponse += "=== ASSESSMENT ===\n";
-      mockResponse += `${formData.general_assessment || ''}\n`;
-      if (formData.denied_symptoms) mockResponse += "Patient denied headache, nausea, vomiting, abdominal pain, diarrhea, chest pain, stroke-like symptoms, or any other pain/medical complaints.\n";
-      if (formData.dcap_btls) mockResponse += "Full assessment performed; no DCAP-BTLS noted throughout the body.\n";
-      if (formData.vitals_normal) mockResponse += "Vital signs checked and within normal limits for the patient.\n";
-      if (formData.additional_assessment) mockResponse += `${formData.additional_assessment}\n\n`;
-      else mockResponse += "\n";
+      
+      let aaoStatus = '';
+      if (formData.is_unresponsive) {
+        aaoStatus = 'Patient unresponsive. ';
+      } else {
+        const aaoCount = [formData.aao_person, formData.aao_place, formData.aao_time, formData.aao_event].filter(Boolean).length;
+        aaoStatus = `Patient was AAOx${aaoCount}`;
+        if (aaoCount < 4) {
+          const missing = [];
+          if (!formData.aao_person) missing.push('person');
+          if (!formData.aao_place) missing.push('place');
+          if (!formData.aao_time) missing.push('time');
+          if (!formData.aao_event) missing.push('event');
+          aaoStatus += ` (could not answer ${missing.join(', ')} questions appropriately)`;
+        }
+        aaoStatus += `, GCS-${formData.gcs_score}, ${formData.pupils}. `;
+      }
+      
+      mockResponse += aaoStatus;
+      
+      if (formData.unable_to_obtain_negatives) {
+        mockResponse += "Unable to obtain pertinent negatives due to patient's condition. ";
+      } else if (formData.selected_pertinent_negatives.length > 0) {
+        mockResponse += `Patient denied: ${formData.selected_pertinent_negatives.join(', ')}. `;
+      }
+      
+      if (formData.vital_signs_normal) {
+        mockResponse += "Vital signs checked and within normal limits for the patient. ";
+      } else if (formData.selected_abnormal_vitals.length > 0) {
+        mockResponse += `Vital signs: Patient was ${formData.selected_abnormal_vitals.join(', ')}. `;
+        if (formData.all_other_vitals_normal) {
+          mockResponse += "All other vital signs within normal limits. ";
+        }
+      }
+      
+      if (formData.dcap_btls) {
+        mockResponse += "Full assessment performed; no DCAP-BTLS noted throughout the body. ";
+      }
+      
+      if (formData.additional_assessment) {
+        mockResponse += `${formData.additional_assessment}\n\n`;
+      } else {
+        mockResponse += "\n\n";
+      }
       
       if (formData.include_headers) mockResponse += "=== TREATMENT ===\n";
       mockResponse += `${formData.treatment_provided || 'No interventions required.'}\n\n`;
+      
+      if (formData.add_protocol_treatments) {
+        mockResponse += "Additional treatments per protocol administered. ";
+        if (formData.protocol_exclusions) {
+          mockResponse += `Protocol exclusions: ${formData.protocol_exclusions}.\n\n`;
+        } else {
+          mockResponse += "\n\n";
+        }
+      }
       
       if (formData.include_headers) mockResponse += "=== TRANSPORT ===\n";
       if (formData.refused_transport) {
@@ -297,20 +325,16 @@ const CreateNarrative = () => {
       return;
     }
     
-    // In a real app, you would show a dialog to select a preset
-    // For now, just load the last preset
     setSelectedPreset(presets[presets.length - 1].data);
     toast.success("Preset loaded");
   };
   
   const activeSessionData = sessions.find(s => s.id === activeSession);
   
-  // Function to toggle sidebar visibility on desktop
   const toggleSidebar = () => {
     setSidebarVisible(!sidebarVisible);
   };
 
-  // Organize sessions by date
   const groupedSessions = sessions.reduce((groups, session) => {
     const date = session.date;
     if (!groups[date]) {
@@ -366,7 +390,6 @@ const CreateNarrative = () => {
       </header>
 
       <main className="flex flex-1 overflow-hidden">
-        {/* Sessions Sidebar - Desktop */}
         <div className={`hidden md:block ${sidebarVisible ? 'w-64' : 'w-0'} flex-shrink-0 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 overflow-hidden transition-all duration-300 ease-in-out`}>
           <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
             <h2 className="font-medium">Sessions</h2>
@@ -432,10 +455,8 @@ const CreateNarrative = () => {
           </div>
         </div>
 
-        {/* Main Content Area */}
         <div className="flex-1 flex flex-col overflow-hidden">
           <div className="flex-1 flex flex-col overflow-hidden p-4">
-            {/* Chat Window */}
             <Card className="flex-1 flex flex-col mb-4 overflow-hidden">
               <CardContent className="p-0 flex-1 flex flex-col">
                 <div className="flex-1 overflow-hidden">
@@ -444,60 +465,57 @@ const CreateNarrative = () => {
                     onSavePreset={handleLoadPreset}
                   />
                 </div>
-                {/* Collapsible Narrative Form */}
-                <div className="border-t border-gray-200 dark:border-gray-700">
-                  <Collapsible className="w-full">
-                    <div className="p-4 pb-0">
-                      <CollapsibleTrigger asChild>
-                        <Button variant="ghost" size="sm" className="h-7 px-2 text-xs">
-                          Narrative Settings & Fields
-                          <ChevronRight className="h-4 w-4 ml-1" />
-                        </Button>
-                      </CollapsibleTrigger>
-                    </div>
-                    <CollapsibleContent>
-                      <div className="p-4 pt-0">
-                        <EnhancedNarrativeForm
-                          onGenerateNarrative={generateNarrative}
-                          onSavePreset={handleSavePreset}
-                          loadPreset={selectedPreset}
-                          activeTab={activeTab}
-                          onTabChange={setActiveTab}
-                        />
-                      </div>
-                    </CollapsibleContent>
-                  </Collapsible>
-                  
-                  <div className="flex p-4 gap-2">
-                    <Textarea
-                      value={userInput}
-                      onChange={(e) => setUserInput(e.target.value)}
-                      placeholder="Type your message here..."
-                      className="min-h-[60px]"
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' && !e.shiftKey) {
-                          e.preventDefault();
-                          handleSendMessage();
-                        }
-                      }}
-                    />
-                    <div className="flex flex-col gap-2">
-                      <Button
-                        onClick={handleSendMessage}
-                        disabled={isGenerating || !userInput.trim()}
-                        className="flex-1"
-                      >
-                        {isGenerating ? "..." : <Send className="h-4 w-4" />}
+                <Collapsible className="w-full">
+                  <div className="p-4 pb-0">
+                    <CollapsibleTrigger asChild>
+                      <Button variant="ghost" size="sm" className="h-7 px-2 text-xs">
+                        Narrative Settings & Fields
+                        <ChevronRight className="h-4 w-4 ml-1" />
                       </Button>
-                      <Button
-                        onClick={() => generateNarrative()}
-                        variant="outline"
-                        className="flex-1"
-                        disabled={isGenerating}
-                      >
-                        Generate
-                      </Button>
+                    </CollapsibleTrigger>
+                  </div>
+                  <CollapsibleContent>
+                    <div className="p-4 pt-0">
+                      <EnhancedNarrativeForm
+                        onGenerateNarrative={generateNarrative}
+                        onSavePreset={handleSavePreset}
+                        loadPreset={selectedPreset}
+                        activeTab={activeTab}
+                        onTabChange={setActiveTab}
+                      />
                     </div>
+                  </CollapsibleContent>
+                </Collapsible>
+                
+                <div className="flex p-4 gap-2">
+                  <Textarea
+                    value={userInput}
+                    onChange={(e) => setUserInput(e.target.value)}
+                    placeholder="Type your message here..."
+                    className="min-h-[60px]"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        handleSendMessage();
+                      }
+                    }}
+                  />
+                  <div className="flex flex-col gap-2">
+                    <Button
+                      onClick={handleSendMessage}
+                      disabled={isGenerating || !userInput.trim()}
+                      className="flex-1"
+                    >
+                      {isGenerating ? "..." : <Send className="h-4 w-4" />}
+                    </Button>
+                    <Button
+                      onClick={() => generateNarrative()}
+                      variant="outline"
+                      className="flex-1"
+                      disabled={isGenerating}
+                    >
+                      Generate
+                    </Button>
                   </div>
                 </div>
               </CardContent>
@@ -506,7 +524,6 @@ const CreateNarrative = () => {
         </div>
       </main>
 
-      {/* Mobile Sessions Drawer */}
       <Drawer open={isDrawerOpen} onOpenChange={setIsDrawerOpen}>
         <DrawerContent className="max-h-[90vh]">
           <div className="p-4 border-b">
