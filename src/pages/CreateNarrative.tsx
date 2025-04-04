@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -89,6 +90,7 @@ const CreateNarrative = () => {
   const [activeTab, setActiveTab] = useState("dispatch");
   const [presets, setPresets] = useState<Preset[]>([]);
   const [selectedPreset, setSelectedPreset] = useState<NarrativeFormData | undefined>(undefined);
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
   const createNewSession = () => {
     const id = `session-${Date.now()}`;
@@ -192,7 +194,8 @@ const CreateNarrative = () => {
     if (input.toLowerCase().includes('generate') || 
         input.toLowerCase().includes('create narrative') || 
         input.toLowerCase().includes('new narrative')) {
-      generateNarrative();
+      // Fixed: Pass a default empty object as formData
+      generateNarrative({} as NarrativeFormData);
       return;
     }
     
@@ -343,6 +346,13 @@ const CreateNarrative = () => {
     groups[date].push(session);
     return groups;
   }, {} as Record<string, Session[]>);
+
+  // Effect to create a new session on initial load if none exist
+  useEffect(() => {
+    if (sessions.length === 0) {
+      handleNewSession();
+    }
+  }, []);
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col">
@@ -509,7 +519,7 @@ const CreateNarrative = () => {
                       {isGenerating ? "..." : <Send className="h-4 w-4" />}
                     </Button>
                     <Button
-                      onClick={() => generateNarrative()}
+                      onClick={() => generateNarrative({} as NarrativeFormData)}
                       variant="outline"
                       className="flex-1"
                       disabled={isGenerating}
