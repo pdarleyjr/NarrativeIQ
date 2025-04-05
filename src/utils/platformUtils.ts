@@ -5,7 +5,9 @@
 
 // Detect if running on iOS
 export const isIOS = (): boolean => {
-  return /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+  // The MSStream property is used in this check to exclude IE11 which also contains "iPad" in navigator.userAgent
+  // We'll add a proper type check to avoid the TypeScript error
+  return /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
 };
 
 // Check if app is running in standalone mode (installed on home screen)
