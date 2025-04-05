@@ -73,7 +73,7 @@ const ProtocolSidebar: React.FC<ProtocolSidebarProps> = ({ chiefComplaint }) => 
               suggestion: 'Spinal immobilization criteria not documented.'
             }
           ]);
-        } else if (narrative.includes('trauma') || narrative.includes('injury')) {
+        } else if (chiefComplaint.includes('trauma') || chiefComplaint.includes('injury')) {
           setProtocols([
             {
               id: 'p5',
