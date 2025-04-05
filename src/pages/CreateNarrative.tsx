@@ -1,15 +1,19 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent } from '@/components/ui/card';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Send, PlusCircle, ChevronRight, ChevronLeft } from 'lucide-react';
+import { ArrowLeft, Send, PlusCircle, ChevronRight, ChevronLeft, Settings, Mic, MicOff } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast } from "sonner";
 import ChatSession from '@/components/ChatSession';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Drawer, DrawerContent, DrawerTrigger } from "@/components/ui/drawer";
 import EnhancedNarrativeForm from '@/components/EnhancedNarrativeForm';
+import NarrativeSettingsDialog from '@/components/NarrativeSettingsDialog';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import ProtocolSidebar from '@/components/ProtocolSidebar';
 
 interface Message {
   type: 'user' | 'assistant';
@@ -73,6 +77,12 @@ interface NarrativeFormData {
   custom_format: string;
 }
 
+interface Preset {
+  id: string;
+  name: string;
+  data: NarrativeFormData;
+}
+
 const defaultFormData: NarrativeFormData = {
   unit: '',
   dispatch_reason: '',
@@ -115,12 +125,6 @@ const defaultFormData: NarrativeFormData = {
   custom_format: ''
 };
 
-interface Preset {
-  id: string;
-  name: string;
-  data: NarrativeFormData;
-}
-
 const CreateNarrative = () => {
   const navigate = useNavigate();
   const [userInput, setUserInput] = useState('');
@@ -132,6 +136,92 @@ const CreateNarrative = () => {
   const [presets, setPresets] = useState<Preset[]>([]);
   const [selectedPreset, setSelectedPreset] = useState<NarrativeFormData | undefined>(undefined);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [narrativeSettings, setNarrativeSettings] = useState({
+    format_type: 'D.R.A.T.T.',
+    use_abbreviations: true,
+    include_headers: true,
+    default_unit: '',
+    default_hospital: '',
+    custom_format: '',
+  });
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
+  const [recognition, setRecognition] = useState<SpeechRecognition | null>(null);
+  const [transcript, setTranscript] = useState('');
+  
+  // Create initial session
+  useEffect(() => {
+    if (sessions.length === 0) {
+      handleNewSession();
+    }
+  }, []);
+
+  // Setup speech recognition
+  useEffect(() => {
+    if ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window) {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      const recognition = new SpeechRecognition();
+      
+      recognition.continuous = true;
+      recognition.interimResults = true;
+      
+      recognition.onresult = (event) => {
+        let finalTranscript = '';
+        
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          const transcript = event.results[i][0].transcript;
+          if (event.results[i].isFinal) {
+            finalTranscript += transcript;
+          }
+        }
+        
+        if (finalTranscript) {
+          setUserInput((prev) => prev + ' ' + finalTranscript);
+          setTranscript('');
+        } else {
+          setTranscript(event.results[event.resultIndex][0].transcript);
+        }
+      };
+      
+      recognition.onerror = (event) => {
+        console.error('Speech recognition error', event.error);
+        setIsRecording(false);
+        toast.error('Speech recognition error: ' + event.error);
+      };
+      
+      recognition.onend = () => {
+        if (isRecording) {
+          recognition.start();
+        }
+      };
+      
+      setRecognition(recognition);
+    } else {
+      toast.error('Speech recognition is not supported in this browser');
+    }
+    
+    return () => {
+      if (recognition) {
+        recognition.onend = null;
+        recognition.abort();
+      }
+    };
+  }, [isRecording]);
+  
+  const toggleSpeechRecognition = () => {
+    if (!recognition) return;
+    
+    if (isRecording) {
+      recognition.stop();
+      setIsRecording(false);
+      setTranscript('');
+      toast.success('Voice input stopped');
+    } else {
+      recognition.start();
+      setIsRecording(true);
+      toast.success('Voice input started');
+    }
+  };
 
   const createNewSession = () => {
     const id = `session-${Date.now()}`;
@@ -235,7 +325,7 @@ const CreateNarrative = () => {
     if (input.toLowerCase().includes('generate') || 
         input.toLowerCase().includes('create narrative') || 
         input.toLowerCase().includes('new narrative')) {
-      generateNarrative({...defaultFormData});
+      generateNarrative({...defaultFormData, ...narrativeSettings});
       return;
     }
     
@@ -372,6 +462,18 @@ const CreateNarrative = () => {
     toast.success("Preset loaded");
   };
   
+  const handleUpdateSettings = (newSettings: any) => {
+    setNarrativeSettings(prev => ({
+      ...prev,
+      ...newSettings
+    }));
+    localStorage.setItem('narrative_settings', JSON.stringify({
+      ...narrativeSettings,
+      ...newSettings
+    }));
+    toast.success("Settings updated");
+  };
+  
   const activeSessionData = sessions.find(s => s.id === activeSession);
   
   const toggleSidebar = () => {
@@ -386,12 +488,6 @@ const CreateNarrative = () => {
     groups[date].push(session);
     return groups;
   }, {} as Record<string, Session[]>);
-
-  useEffect(() => {
-    if (sessions.length === 0) {
-      handleNewSession();
-    }
-  }, []);
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col">
@@ -430,6 +526,21 @@ const CreateNarrative = () => {
               <PlusCircle className="h-4 w-4" />
               New Session
             </Button>
+            <Popover open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
+              <PopoverTrigger asChild>
+                <Button variant="outline" size="sm" className="flex items-center gap-1">
+                  <Settings className="h-4 w-4" />
+                  <span className="hidden sm:inline">Settings</span>
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-80">
+                <NarrativeSettingsDialog 
+                  initialSettings={narrativeSettings} 
+                  onSave={handleUpdateSettings}
+                  onClose={() => setIsSettingsOpen(false)}
+                />
+              </PopoverContent>
+            </Popover>
             <Button variant="outline" onClick={() => navigate('/dashboard')} className="flex items-center gap-2">
               <ArrowLeft className="h-4 w-4" />
               <span className="hidden sm:inline">Dashboard</span>
@@ -452,7 +563,7 @@ const CreateNarrative = () => {
               <span className="sr-only">New Session</span>
             </Button>
           </div>
-          <div className="overflow-y-auto h-full">
+          <div className="overflow-y-auto max-h-[50vh]">
             {Object.entries(groupedSessions).map(([date, dateSessions]) => (
               <div key={date} className="mb-4">
                 <div className="px-4 py-1 text-xs font-medium text-gray-500">
@@ -480,7 +591,7 @@ const CreateNarrative = () => {
                         }}
                       >
                         <svg width="15" height="15" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg">
-                          <path d="M11.8536 1.14645C11.6583 0.951184 11.3417 0.951184 11.1465 1.14645L3.71455 8.57836C3.62459 8.66832 3.55263 8.77461 3.50251 8.89155L2.04044 12.303C1.9599 12.491 2.00189 12.709 2.14646 12.8536C2.29103 12.9981 2.50905 13.0401 2.69697 12.9596L6.10847 11.4975C6.2254 11.4474 6.3317 11.3754 6.42166 11.2855L13.8536 3.85355C14.0488 3.65829 14.0488 3.34171 13.8536 3.14645L11.8536 1.14645ZM4.42166 9.28547L11.5 2.20711L12.7929 3.5L5.71455 10.5784L4.21924 11.2192L3.78081 10.7808L4.42166 9.28547Z" fill="currentColor" fill-rule="evenodd" clip-rule="evenodd"></path>
+                          <path d="M11.8536 1.14645C11.6583 0.951184 11.3417 0.951184 11.1465 1.14645L3.71455 8.57836C3.62459 8.66832 3.55263 8.77461 3.50251 8.89155L2.04044 12.303C1.9599 12.491 2.00189 12.709 2.14646 12.8536C2.29103 12.9981 2.50905 13.0401 2.69697 12.9596L6.10847 11.4975C6.2254 11.4474 6.3317 11.3754 6.42166 11.2855L13.8536 3.85355C14.0488 3.65829 14.0488 3.34171 13.8536 3.14645L11.8536 1.14645ZM4.42166 9.28547L11.5 2.20711L12.7929 3.5L5.71455 10.5784L4.21924 11.2192L3.78081 10.7808L4.42166 9.28547Z" fill="currentColor" fillRule="evenodd" clipRule="evenodd"></path>
                         </svg>
                       </Button>
                       <Button 
@@ -493,7 +604,7 @@ const CreateNarrative = () => {
                         }}
                       >
                         <svg width="15" height="15" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg">
-                          <path d="M5.5 1C5.22386 1 5 1.22386 5 1.5C5 1.77614 5.22386 2 5.5 2H9.5C9.77614 2 10 1.77614 10 1.5C10 1.22386 9.77614 1 9.5 1H5.5ZM3 3.5C3 3.22386 3.22386 3 3.5 3H11.5C11.7761 3 12 3.22386 12 3.5C12 3.77614 11.7761 4 11.5 4H3.5C3.22386 4 3 3.77614 3 3.5ZM3 5.5C3 5.22386 3.22386 5 3.5 5H11.5C11.7761 5 12 5.22386 12 5.5C12 5.77614 11.7761 6 11.5 6H3.5C3.22386 6 3 5.77614 3 5.5ZM3 7.5C3 7.22386 3.22386 7 3.5 7H11.5C11.7761 7 12 7.22386 12 7.5C12 7.77614 11.7761 8 11.5 8H3.5C3.22386 8 3 7.77614 3 7.5ZM3 9.5C3 9.22386 3.22386 9 3.5 9H11.5C11.7761 9 12 9.22386 12 9.5C12 9.77614 11.7761 10 11.5 10H3.5C3.22386 10 3 9.77614 3 9.5ZM3 11.5C3 11.2239 3.22386 11 3.5 11H11.5C11.7761 11 12 11.2239 12 11.5C12 11.7761 11.7761 12 11.5 12H3.5C3.22386 12 3 11.7761 3 11.5ZM3 13.5C3 13.2239 3.22386 13 3.5 13H11.5C11.7761 13 12 13.2239 12 13.5C12 13.7761 11.7761 14 11.5 14H3.5C3.22386 14 3 13.7761 3 13.5Z" fill="currentColor" fill-rule="evenodd" clip-rule="evenodd"></path>
+                          <path d="M5.5 1C5.22386 1 5 1.22386 5 1.5C5 1.77614 5.22386 2 5.5 2H9.5C9.77614 2 10 1.77614 10 1.5C10 1.22386 9.77614 1 9.5 1H5.5ZM3 3.5C3 3.22386 3.22386 3 3.5 3H11.5C11.7761 3 12 3.22386 12 3.5C12 3.77614 11.7761 4 11.5 4H3.5C3.22386 4 3 3.77614 3 3.5ZM3 5.5C3 5.22386 3.22386 5 3.5 5H11.5C11.7761 5 12 5.22386 12 5.5C12 5.77614 11.7761 6 11.5 6H3.5C3.22386 6 3 5.77614 3 5.5ZM3 7.5C3 7.22386 3.22386 7 3.5 7H11.5C11.7761 7 12 7.22386 12 7.5C12 7.77614 11.7761 8 11.5 8H3.5C3.22386 8 3 7.77614 3 7.5ZM3 9.5C3 9.22386 3.22386 9 3.5 9H11.5C11.7761 9 12 9.22386 12 9.5C12 9.77614 11.7761 10 11.5 10H3.5C3.22386 10 3 9.77614 3 9.5ZM3 11.5C3 11.2239 3.22386 11 3.5 11H11.5C11.7761 11 12 11.2239 12 11.5C12 11.7761 11.7761 12 11.5 12H3.5C3.22386 12 3 11.7761 3 11.5ZM3 13.5C3 13.2239 3.22386 13 3.5 13H11.5C11.7761 13 12 13.2239 12 13.5C12 13.7761 11.7761 14 11.5 14H3.5C3.22386 14 3 13.7761 3 13.5Z" fill="currentColor" fillRule="evenodd" clipRule="evenodd"></path>
                         </svg>
                       </Button>
                     </div>
@@ -501,6 +612,11 @@ const CreateNarrative = () => {
                 ))}
               </div>
             ))}
+          </div>
+          
+          <div className="p-4 border-t border-gray-200 dark:border-gray-700">
+            <h2 className="font-medium mb-2">Related Protocols</h2>
+            <ProtocolSidebar chiefComplaint={activeSessionData?.messages.find(m => m.type === 'assistant')?.content || ''} />
           </div>
         </div>
 
@@ -531,25 +647,41 @@ const CreateNarrative = () => {
                         loadPreset={selectedPreset}
                         activeTab={activeTab}
                         onTabChange={setActiveTab}
+                        settings={narrativeSettings}
                       />
                     </div>
                   </CollapsibleContent>
                 </Collapsible>
                 
                 <div className="flex p-4 gap-2">
-                  <Textarea
-                    value={userInput}
-                    onChange={(e) => setUserInput(e.target.value)}
-                    placeholder="Type your message here..."
-                    className="min-h-[60px]"
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' && !e.shiftKey) {
-                        e.preventDefault();
-                        handleSendMessage();
-                      }
-                    }}
-                  />
+                  <div className="relative flex-1">
+                    <Textarea
+                      value={userInput}
+                      onChange={(e) => setUserInput(e.target.value)}
+                      placeholder={isRecording ? 'Listening...' : 'Type your message here...'}
+                      className={`min-h-[60px] ${isRecording ? 'pr-10' : ''}`}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && !e.shiftKey) {
+                          e.preventDefault();
+                          handleSendMessage();
+                        }
+                      }}
+                    />
+                    {transcript && (
+                      <div className="absolute bottom-full left-0 right-0 bg-gray-100 dark:bg-gray-800 p-2 rounded-t-md text-sm">
+                        {transcript}
+                      </div>
+                    )}
+                  </div>
                   <div className="flex flex-col gap-2">
+                    <Button
+                      onClick={toggleSpeechRecognition}
+                      variant={isRecording ? "default" : "outline"}
+                      className={`flex-1 ${isRecording ? 'bg-red-500 hover:bg-red-600' : ''}`}
+                      title={isRecording ? 'Stop recording' : 'Start voice recording'}
+                    >
+                      {isRecording ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
+                    </Button>
                     <Button
                       onClick={handleSendMessage}
                       disabled={isGenerating || !userInput.trim()}
@@ -558,7 +690,7 @@ const CreateNarrative = () => {
                       {isGenerating ? "..." : <Send className="h-4 w-4" />}
                     </Button>
                     <Button
-                      onClick={() => generateNarrative({...defaultFormData})}
+                      onClick={() => generateNarrative({...defaultFormData, ...narrativeSettings})}
                       variant="outline"
                       className="flex-1"
                       disabled={isGenerating}
@@ -613,7 +745,7 @@ const CreateNarrative = () => {
                             handleRenameSession(session.id);
                           }}
                         >
-                          <svg width="15" height="15" viewBox="0 0 15 15" fill="currentColor" fill-rule="evenodd" clip-rule="evenodd"></svg>
+                          <svg width="15" height="15" viewBox="0 0 15 15" fill="currentColor" fillRule="evenodd" clipRule="evenodd"></svg>
                         </Button>
                         <Button 
                           variant="ghost" 
@@ -624,7 +756,7 @@ const CreateNarrative = () => {
                             handleDeleteSession(session.id);
                           }}
                         >
-                          <svg width="15" height="15" viewBox="0 0 15 15" fill="currentColor" fill-rule="evenodd" clip-rule="evenodd"></svg>
+                          <svg width="15" height="15" viewBox="0 0 15 15" fill="currentColor" fillRule="evenodd" clipRule="evenodd"></svg>
                         </Button>
                       </div>
                     </div>
@@ -640,3 +772,4 @@ const CreateNarrative = () => {
 };
 
 export default CreateNarrative;
+

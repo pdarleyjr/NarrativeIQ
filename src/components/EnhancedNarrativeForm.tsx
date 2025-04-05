@@ -130,22 +130,18 @@ const abnormalVitalSigns = [
 ];
 
 interface NarrativeFormData {
-  // Dispatch tab
   unit: string;
   dispatch_reason: string;
   
-  // Response tab
   response_delay: string;
   response_delay_custom: string;
   
-  // Arrival tab
   patient_sex: string;
   patient_age: string;
   chief_complaint: string;
   duration: string;
   patient_presentation: string;
   
-  // Assessment tab
   aao_person: boolean;
   aao_place: boolean;
   aao_time: boolean;
@@ -161,12 +157,10 @@ interface NarrativeFormData {
   dcap_btls: boolean;
   additional_assessment: string;
   
-  // Treatment tab
   treatment_provided: string;
   add_protocol_treatments: boolean;
   protocol_exclusions: string;
   
-  // Transport tab
   refused_transport: boolean;
   refusal_details: string;
   transport_destination: string;
@@ -175,7 +169,6 @@ interface NarrativeFormData {
   nurse_name: string;
   unit_in_service: boolean;
   
-  // Settings
   format_type: 'D.R.A.T.T.' | 'S.O.A.P.' | 'C.H.A.R.T.' | string;
   use_abbreviations: boolean;
   include_headers: boolean;
@@ -232,6 +225,14 @@ interface EnhancedNarrativeFormProps {
   loadPreset?: NarrativeFormData;
   activeTab?: string;
   onTabChange?: (tab: string) => void;
+  settings?: {
+    format_type: string;
+    use_abbreviations: boolean;
+    include_headers: boolean;
+    default_unit: string;
+    default_hospital: string;
+    custom_format: string;
+  };
 }
 
 const EnhancedNarrativeForm: React.FC<EnhancedNarrativeFormProps> = ({ 
@@ -239,11 +240,11 @@ const EnhancedNarrativeForm: React.FC<EnhancedNarrativeFormProps> = ({
   onSavePreset,
   loadPreset,
   activeTab = "dispatch",
-  onTabChange
+  onTabChange,
+  settings
 }) => {
   const [formData, setFormData] = useState<NarrativeFormData>(initialFormData);
   
-  // Load saved draft or preset
   useEffect(() => {
     if (loadPreset) {
       const safePreset = {
@@ -272,14 +273,20 @@ const EnhancedNarrativeForm: React.FC<EnhancedNarrativeFormProps> = ({
     }
   }, [loadPreset]);
   
-  // Save draft on form change
   useEffect(() => {
-    const handler = setTimeout(() => {
-      localStorage.setItem('narrative_draft', JSON.stringify(formData));
-    }, 400);
-    return () => clearTimeout(handler);
-  }, [formData]);
-
+    if (settings) {
+      setFormData(prev => ({
+        ...prev,
+        format_type: settings.format_type,
+        use_abbreviations: settings.use_abbreviations,
+        include_headers: settings.include_headers,
+        default_unit: settings.default_unit,
+        default_hospital: settings.default_hospital,
+        custom_format: settings.custom_format
+      }));
+    }
+  }, [settings]);
+  
   useEffect(() => {
     // Set unit from default if empty
     if (!formData.unit && formData.default_unit) {
@@ -296,7 +303,6 @@ const EnhancedNarrativeForm: React.FC<EnhancedNarrativeFormProps> = ({
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  // Toggle specific pertinent negative
   const togglePertinentNegative = (negative: string) => {
     setFormData(prev => {
       const currentNegatives = prev.selected_pertinent_negatives || [];
@@ -314,7 +320,6 @@ const EnhancedNarrativeForm: React.FC<EnhancedNarrativeFormProps> = ({
     });
   };
 
-  // Toggle all pertinent negatives
   const toggleAllPertinentNegatives = (checked: boolean) => {
     setFormData(prev => ({
       ...prev,
@@ -322,7 +327,6 @@ const EnhancedNarrativeForm: React.FC<EnhancedNarrativeFormProps> = ({
     }));
   };
 
-  // Toggle specific abnormal vital sign
   const toggleAbnormalVitalSign = (vitalSign: string) => {
     setFormData(prev => {
       const currentVitalSigns = prev.selected_abnormal_vitals || [];
@@ -340,7 +344,6 @@ const EnhancedNarrativeForm: React.FC<EnhancedNarrativeFormProps> = ({
     });
   };
 
-  // Set normal assessment findings
   const setNormalAssessment = () => {
     setFormData(prev => ({
       ...prev,
@@ -361,7 +364,6 @@ const EnhancedNarrativeForm: React.FC<EnhancedNarrativeFormProps> = ({
     }));
   };
 
-  // Set worst assessment findings
   const setWorstAssessment = () => {
     setFormData(prev => ({
       ...prev,
@@ -382,7 +384,6 @@ const EnhancedNarrativeForm: React.FC<EnhancedNarrativeFormProps> = ({
     }));
   };
 
-  // Toggle unresponsive state
   const toggleUnresponsiveState = (checked: boolean) => {
     if (checked) {
       setFormData(prev => ({
@@ -456,7 +457,6 @@ const EnhancedNarrativeForm: React.FC<EnhancedNarrativeFormProps> = ({
           <TabsTrigger value="assessment">Assessment</TabsTrigger>
           <TabsTrigger value="treatment">Treatment</TabsTrigger>
           <TabsTrigger value="transport">Transport</TabsTrigger>
-          <TabsTrigger value="settings">Settings</TabsTrigger>
         </TabsList>
         
         <TabsContent value="dispatch" className="pt-2 space-y-3">
