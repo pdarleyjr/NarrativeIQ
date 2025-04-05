@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
@@ -247,12 +246,25 @@ const EnhancedNarrativeForm: React.FC<EnhancedNarrativeFormProps> = ({
   // Load saved draft or preset
   useEffect(() => {
     if (loadPreset) {
-      setFormData(loadPreset);
+      const safePreset = {
+        ...initialFormData,
+        ...loadPreset,
+        selected_pertinent_negatives: loadPreset.selected_pertinent_negatives || [],
+        selected_abnormal_vitals: loadPreset.selected_abnormal_vitals || []
+      };
+      setFormData(safePreset);
     } else {
       const savedDraft = localStorage.getItem('narrative_draft');
       if (savedDraft) {
         try {
-          setFormData(JSON.parse(savedDraft));
+          const parsedData = JSON.parse(savedDraft);
+          const safeData = {
+            ...initialFormData,
+            ...parsedData,
+            selected_pertinent_negatives: parsedData.selected_pertinent_negatives || [],
+            selected_abnormal_vitals: parsedData.selected_abnormal_vitals || []
+          };
+          setFormData(safeData);
         } catch (error) {
           console.error("Failed to parse saved draft", error);
         }
@@ -287,7 +299,7 @@ const EnhancedNarrativeForm: React.FC<EnhancedNarrativeFormProps> = ({
   // Toggle specific pertinent negative
   const togglePertinentNegative = (negative: string) => {
     setFormData(prev => {
-      const currentNegatives = [...prev.selected_pertinent_negatives];
+      const currentNegatives = prev.selected_pertinent_negatives || [];
       if (currentNegatives.includes(negative)) {
         return {
           ...prev,
@@ -313,7 +325,7 @@ const EnhancedNarrativeForm: React.FC<EnhancedNarrativeFormProps> = ({
   // Toggle specific abnormal vital sign
   const toggleAbnormalVitalSign = (vitalSign: string) => {
     setFormData(prev => {
-      const currentVitalSigns = [...prev.selected_abnormal_vitals];
+      const currentVitalSigns = prev.selected_abnormal_vitals || [];
       if (currentVitalSigns.includes(vitalSign)) {
         return {
           ...prev,

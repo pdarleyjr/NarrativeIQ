@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -73,6 +72,48 @@ interface NarrativeFormData {
   default_hospital: string;
   custom_format: string;
 }
+
+const defaultFormData: NarrativeFormData = {
+  unit: '',
+  dispatch_reason: '',
+  response_delay: 'No response delays',
+  response_delay_custom: '',
+  patient_sex: '',
+  patient_age: '',
+  chief_complaint: '',
+  duration: '',
+  patient_presentation: '',
+  aao_person: true,
+  aao_place: true,
+  aao_time: true,
+  aao_event: true,
+  is_unresponsive: false,
+  gcs_score: '15',
+  pupils: 'PERRL',
+  selected_pertinent_negatives: [],
+  unable_to_obtain_negatives: false,
+  vital_signs_normal: true,
+  selected_abnormal_vitals: [],
+  all_other_vitals_normal: true,
+  dcap_btls: true,
+  additional_assessment: '',
+  treatment_provided: '',
+  add_protocol_treatments: false,
+  protocol_exclusions: '',
+  refused_transport: false,
+  refusal_details: '',
+  transport_destination: '',
+  transport_position: 'Position of comfort',
+  room_number: '',
+  nurse_name: '',
+  unit_in_service: true,
+  format_type: 'D.R.A.T.T.',
+  use_abbreviations: true,
+  include_headers: true,
+  default_unit: '',
+  default_hospital: '',
+  custom_format: ''
+};
 
 interface Preset {
   id: string;
@@ -194,8 +235,7 @@ const CreateNarrative = () => {
     if (input.toLowerCase().includes('generate') || 
         input.toLowerCase().includes('create narrative') || 
         input.toLowerCase().includes('new narrative')) {
-      // Fixed: Pass a default empty object as formData
-      generateNarrative({} as NarrativeFormData);
+      generateNarrative({...defaultFormData});
       return;
     }
     
@@ -250,13 +290,13 @@ const CreateNarrative = () => {
       
       if (formData.unable_to_obtain_negatives) {
         mockResponse += "Unable to obtain pertinent negatives due to patient's condition. ";
-      } else if (formData.selected_pertinent_negatives.length > 0) {
+      } else if (formData.selected_pertinent_negatives && formData.selected_pertinent_negatives.length > 0) {
         mockResponse += `Patient denied: ${formData.selected_pertinent_negatives.join(', ')}. `;
       }
       
       if (formData.vital_signs_normal) {
         mockResponse += "Vital signs checked and within normal limits for the patient. ";
-      } else if (formData.selected_abnormal_vitals.length > 0) {
+      } else if (formData.selected_abnormal_vitals && formData.selected_abnormal_vitals.length > 0) {
         mockResponse += `Vital signs: Patient was ${formData.selected_abnormal_vitals.join(', ')}. `;
         if (formData.all_other_vitals_normal) {
           mockResponse += "All other vital signs within normal limits. ";
@@ -347,7 +387,6 @@ const CreateNarrative = () => {
     return groups;
   }, {} as Record<string, Session[]>);
 
-  // Effect to create a new session on initial load if none exist
   useEffect(() => {
     if (sessions.length === 0) {
       handleNewSession();
@@ -519,7 +558,7 @@ const CreateNarrative = () => {
                       {isGenerating ? "..." : <Send className="h-4 w-4" />}
                     </Button>
                     <Button
-                      onClick={() => generateNarrative({} as NarrativeFormData)}
+                      onClick={() => generateNarrative({...defaultFormData})}
                       variant="outline"
                       className="flex-1"
                       disabled={isGenerating}
@@ -574,9 +613,7 @@ const CreateNarrative = () => {
                             handleRenameSession(session.id);
                           }}
                         >
-                          <svg width="15" height="15" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M11.8536 1.14645C11.6583 0.951184 11.3417 0.951184 11.1465 1.14645L3.71455 8.57836C3.62459 8.66832 3.55263 8.77461 3.50251 8.89155L2.04044 12.303C1.9599 12.491 2.00189 12.709 2.14646 12.8536C2.29103 12.9981 2.50905 13.0401 2.69697 12.9596L6.10847 11.4975C6.2254 11.4474 6.3317 11.3754 6.42166 11.2855L13.8536 3.85355C14.0488 3.65829 14.0488 3.34171 13.8536 3.14645L11.8536 1.14645ZM4.42166 9.28547L11.5 2.20711L12.7929 3.5L5.71455 10.5784L4.21924 11.2192L3.78081 10.7808L4.42166 9.28547Z" fill="currentColor" fill-rule="evenodd" clip-rule="evenodd"></path>
-                          </svg>
+                          <svg width="15" height="15" viewBox="0 0 15 15" fill="currentColor" fill-rule="evenodd" clip-rule="evenodd"></svg>
                         </Button>
                         <Button 
                           variant="ghost" 
@@ -587,9 +624,7 @@ const CreateNarrative = () => {
                             handleDeleteSession(session.id);
                           }}
                         >
-                          <svg width="15" height="15" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M5.5 1C5.22386 1 5 1.22386 5 1.5C5 1.77614 5.22386 2 5.5 2H9.5C9.77614 2 10 1.77614 10 1.5C10 1.22386 9.77614 1 9.5 1H5.5ZM3 3.5C3 3.22386 3.22386 3 3.5 3H11.5C11.7761 3 12 3.22386 12 3.5C12 3.77614 11.7761 4 11.5 4H3.5C3.22386 4 3 3.77614 3 3.5ZM3 5.5C3 5.22386 3.22386 5 3.5 5H11.5C11.7761 5 12 5.22386 12 5.5C12 5.77614 11.7761 6 11.5 6H3.5C3.22386 6 3 5.77614 3 5.5ZM3 7.5C3 7.22386 3.22386 7 3.5 7H11.5C11.7761 7 12 7.22386 12 7.5C12 7.77614 11.7761 8 11.5 8H3.5C3.22386 8 3 7.77614 3 7.5ZM3 9.5C3 9.22386 3.22386 9 3.5 9H11.5C11.7761 9 12 9.22386 12 9.5C12 9.77614 11.7761 10 11.5 10H3.5C3.22386 10 3 9.77614 3 9.5ZM3 11.5C3 11.2239 3.22386 11 3.5 11H11.5C11.7761 11 12 11.2239 12 11.5C12 11.7761 11.7761 12 11.5 12H3.5C3.22386 12 3 11.7761 3 11.5ZM3 13.5C3 13.2239 3.22386 13 3.5 13H11.5C11.7761 13 12 13.2239 12 13.5C12 13.7761 11.7761 14 11.5 14H3.5C3.22386 14 3 13.7761 3 13.5Z" fill="currentColor" fill-rule="evenodd" clip-rule="evenodd"></path>
-                          </svg>
+                          <svg width="15" height="15" viewBox="0 0 15 15" fill="currentColor" fill-rule="evenodd" clip-rule="evenodd"></svg>
                         </Button>
                       </div>
                     </div>
