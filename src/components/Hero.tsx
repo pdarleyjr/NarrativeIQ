@@ -37,6 +37,15 @@ const Hero: React.FC = () => {
       {/* Content */}
       <div className="container mx-auto px-6 py-24 relative z-10">
         <div className="max-w-3xl mx-auto text-center">
+          {/* Logo added here */}
+          <div className="flex justify-center mb-8">
+            <img 
+              src="/lovable-uploads/608365e0-5539-4f94-898a-8bbe69a08614.png" 
+              alt="NarrativeIQ Logo" 
+              className="w-48 h-auto"
+            />
+          </div>
+          
           <div className="inline-block mb-6 px-6 py-2 bg-ems-600/10 dark:bg-ems-500/20 rounded-full backdrop-blur-sm">
             <span className="text-ems-700 dark:text-ems-300 font-medium">AI-powered EMS reports</span>
           </div>

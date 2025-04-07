@@ -30,7 +30,7 @@ const Dashboard = () => {
         <div className="container mx-auto py-4 px-6 flex justify-between items-center">
           <div className="flex items-center gap-2">
             <h1 className="text-xl font-bold text-ems-600 dark:text-ems-400">
-              EMS Narratives Dashboard
+              NarrativeIQ Dashboard
             </h1>
           </div>
         </div>
