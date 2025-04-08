@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import { TouchFeedback } from '@/components/ui/ios-feedback';
+import { triggerHapticFeedback } from '@/utils/platformUtils';
 
 interface FAQItemProps {
   question: string;
@@ -14,6 +15,7 @@ const FAQItem: React.FC<FAQItemProps> = ({ question, answer, index }) => {
 
   const toggleOpen = () => {
     setIsOpen(!isOpen);
+    triggerHapticFeedback();
   };
 
   return (
@@ -24,6 +26,8 @@ const FAQItem: React.FC<FAQItemProps> = ({ question, answer, index }) => {
       <TouchFeedback onClick={toggleOpen} feedbackColor="#6366f1">
         <button 
           className="flex justify-between items-center w-full text-left focus:outline-none"
+          aria-expanded={isOpen}
+          aria-controls={`faq-answer-${index}`}
         >
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{question}</h3>
           {isOpen ? 
@@ -34,7 +38,10 @@ const FAQItem: React.FC<FAQItemProps> = ({ question, answer, index }) => {
       </TouchFeedback>
       
       {isOpen && (
-        <div className="mt-2 text-gray-600 dark:text-gray-300">
+        <div 
+          id={`faq-answer-${index}`}
+          className="mt-2 text-gray-600 dark:text-gray-300 transition-all duration-300"
+        >
           <p>{answer}</p>
         </div>
       )}
@@ -99,6 +106,18 @@ const FAQ: React.FC = () => {
               index={index}
             />
           ))}
+        </div>
+        
+        <div className="text-center mt-12">
+          <TouchFeedback feedbackColor="#6366f1">
+            <a 
+              href="#"
+              className="inline-flex items-center text-ems-600 dark:text-ems-400 hover:underline"
+              aria-label="Contact support for more questions"
+            >
+              <span>Don't see your question? Contact our support team</span>
+            </a>
+          </TouchFeedback>
         </div>
       </div>
     </section>

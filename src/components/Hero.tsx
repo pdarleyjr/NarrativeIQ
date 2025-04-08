@@ -9,6 +9,7 @@ const Hero: React.FC = () => {
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const [ctaIndex, setCTAIndex] = useState(0);
   const [showFeedback, setShowFeedback] = useState(false);
+  const [animateBlur, setAnimateBlur] = useState(false);
 
   const ctaOptions = [
     "Subscribe Now",
@@ -34,6 +35,11 @@ const Hero: React.FC = () => {
     const interval = setInterval(() => {
       setCTAIndex((prev) => (prev + 1) % ctaOptions.length);
     }, 5000);
+    
+    // Start blur animation after a small delay
+    setTimeout(() => {
+      setAnimateBlur(true);
+    }, 500);
     
     return () => {
       document.removeEventListener('mousemove', handleMouseMove);
@@ -63,8 +69,11 @@ const Hero: React.FC = () => {
       <div className="container mx-auto px-6 py-24 relative z-10">
         <div className="max-w-3xl mx-auto text-center">
           <div 
-            className="inline-block mb-6 px-6 py-2 bg-ems-600/10 dark:bg-ems-500/20 rounded-full backdrop-blur-sm"
-            style={{ transform: 'perspective(1000px) rotateX(0deg)' }}
+            className={cn(
+              "inline-block mb-6 px-6 py-2 bg-ems-600/10 dark:bg-ems-500/20 rounded-full backdrop-blur-sm",
+              "transform transition-all duration-700",
+              animateBlur ? "scale-100 opacity-100" : "scale-95 opacity-0"
+            )}
           >
             <span className="text-ems-700 dark:text-ems-300 font-medium">AI-enhanced Fire & EMS reports</span>
           </div>
@@ -89,25 +98,38 @@ const Hero: React.FC = () => {
           </div>
           
           <div className="flex flex-col sm:flex-row justify-center gap-4 animate-fadeIn">
-            <a href="/subscribe">
+            <a href="/subscribe" className="relative">
+              <div className="absolute inset-0 bg-gradient-to-r from-ems-600/20 to-purple-600/20 rounded-xl filter blur-md animate-pulse-slow"></div>
               <TouchFeedback onClick={handleButtonClick} feedbackColor="#4f46e5">
-                <Button className="button-gradient text-lg px-8 py-6 rounded-xl shadow-lg shadow-ems-600/20 dark:shadow-ems-500/20">
+                <Button 
+                  className="button-gradient text-lg px-8 py-6 rounded-xl shadow-lg shadow-ems-600/20 dark:shadow-ems-500/20 relative z-10"
+                  aria-label="Subscribe to our service"
+                  aria-describedby="subscription-desc"
+                >
                   {ctaOptions[ctaIndex]}
                 </Button>
               </TouchFeedback>
+              <span id="subscription-desc" className="sr-only">Start your subscription to the Fire and EMS Narrative Generator</span>
             </a>
             <a href="/login">
               <TouchFeedback onClick={handleButtonClick} feedbackColor="#6366f1">
-                <Button variant="outline" className="text-lg px-8 py-6 rounded-xl">
+                <Button 
+                  variant="outline" 
+                  className="text-lg px-8 py-6 rounded-xl"
+                  aria-label="Log in to your account"
+                >
                   Log In
                 </Button>
               </TouchFeedback>
             </a>
           </div>
           
-          <div className="mt-8 text-sm text-gray-500 dark:text-gray-400">
-            <a href="#" className="underline hover:text-ems-500 dark:hover:text-ems-400 mr-4">
+          <div className="mt-8 text-sm text-gray-500 dark:text-gray-400 flex justify-center space-x-6">
+            <a href="#" className="underline hover:text-ems-500 dark:hover:text-ems-400">
               Privacy Policy
+            </a>
+            <a href="#" className="underline hover:text-ems-500 dark:hover:text-ems-400">
+              Terms of Service
             </a>
             <a href="#" className="underline hover:text-ems-500 dark:hover:text-ems-400">
               Contact Support
@@ -128,3 +150,7 @@ const Hero: React.FC = () => {
 };
 
 export default Hero;
+
+function cn(...args: any[]): string {
+  return args.filter(Boolean).join(' ');
+}

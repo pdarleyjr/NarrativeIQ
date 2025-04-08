@@ -28,7 +28,7 @@ const FeatureCard: React.FC<FeatureCardProps> = ({ title, description, icon, ind
       <div 
         className={cn(
           "glass-card p-6 flex flex-col items-start transition-all hover:translate-y-[-5px] duration-300",
-          "animate-fadeIn opacity-0"
+          "animate-fadeIn opacity-0 h-full"
         )}
         style={{ animationDelay: `${index * 150}ms` }}
       >
