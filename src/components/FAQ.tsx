@@ -1,6 +1,7 @@
 
 import React, { useState } from 'react';
 import { ChevronDown, ChevronUp } from 'lucide-react';
+import { TouchFeedback } from '@/components/ui/ios-feedback';
 
 interface FAQItemProps {
   question: string;
@@ -11,21 +12,26 @@ interface FAQItemProps {
 const FAQItem: React.FC<FAQItemProps> = ({ question, answer, index }) => {
   const [isOpen, setIsOpen] = useState(false);
 
+  const toggleOpen = () => {
+    setIsOpen(!isOpen);
+  };
+
   return (
     <div 
       className="border-b border-gray-200 dark:border-gray-700 py-4 animate-fadeIn opacity-0"
       style={{ animationDelay: `${index * 100}ms` }}
     >
-      <button 
-        className="flex justify-between items-center w-full text-left focus:outline-none"
-        onClick={() => setIsOpen(!isOpen)}
-      >
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{question}</h3>
-        {isOpen ? 
-          <ChevronUp className="h-5 w-5 text-ems-600 dark:text-ems-400" /> : 
-          <ChevronDown className="h-5 w-5 text-ems-600 dark:text-ems-400" />
-        }
-      </button>
+      <TouchFeedback onClick={toggleOpen} feedbackColor="#6366f1">
+        <button 
+          className="flex justify-between items-center w-full text-left focus:outline-none"
+        >
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{question}</h3>
+          {isOpen ? 
+            <ChevronUp className="h-5 w-5 text-ems-600 dark:text-ems-400" /> : 
+            <ChevronDown className="h-5 w-5 text-ems-600 dark:text-ems-400" />
+          }
+        </button>
+      </TouchFeedback>
       
       {isOpen && (
         <div className="mt-2 text-gray-600 dark:text-gray-300">
@@ -39,24 +45,32 @@ const FAQItem: React.FC<FAQItemProps> = ({ question, answer, index }) => {
 const FAQ: React.FC = () => {
   const faqs = [
     {
-      question: "What is the EMS Narrative Generator?",
-      answer: "The EMS Narrative Generator is an AI-powered tool that helps emergency medical service professionals create accurate, compliant, and detailed patient care narratives quickly and efficiently."
+      question: "What is the Fire & EMS Narrative Generator?",
+      answer: "The Fire & EMS Narrative Generator is an AI-powered tool that helps emergency service professionals create accurate, compliant, and detailed narratives quickly and efficiently. It supports both Fire incident reports (NFIRS) and EMS patient care narratives (PCRs)."
+    },
+    {
+      question: "How does it handle NFIRS reporting requirements?",
+      answer: "Our system understands National Fire Incident Reporting System (NFIRS) requirements and helps generate compliant narratives that include all required elements, proper terminology, and consistent formatting according to department standards."
     },
     {
       question: "How much time can I save using this tool?",
-      answer: "Most users report saving 15-20 minutes per report, which can translate to hours saved per shift depending on call volume."
+      answer: "Most users report saving 15-20 minutes per report, which can translate to hours saved per shift depending on call volume. Fire departments with high call volumes often see the greatest time savings."
     },
     {
-      question: "Is my patient data secure and HIPAA compliant?",
+      question: "Is my patient and incident data secure and HIPAA compliant?",
       answer: "Yes, we take data security very seriously. Our system is fully HIPAA compliant, utilizes end-to-end encryption, and we never store patient-identifiable information."
     },
     {
       question: "Can I customize the narratives to my agency's specific protocols?",
-      answer: "Yes, the system can be customized to follow your specific agency protocols and reporting requirements."
+      answer: "Yes, the system can be customized to follow your specific agency protocols and reporting requirements for both Fire and EMS documentation."
+    },
+    {
+      question: "Does it work with existing ePCR and Fire reporting software?",
+      answer: "Yes, our narrative generator creates text that can be copied and pasted into most electronic patient care reporting and fire incident reporting software systems."
     },
     {
       question: "How does the subscription work?",
-      answer: "We offer a simple $10/month subscription with unlimited narrative generation. You can cancel anytime with no long-term commitment."
+      answer: "We offer a simple $10/month subscription with unlimited narrative generation for both Fire and EMS reports. You can cancel anytime with no long-term commitment."
     },
     {
       question: "Is there an admin access option for my organization?",
@@ -72,7 +86,7 @@ const FAQ: React.FC = () => {
             Frequently Asked Questions
           </h2>
           <p className="text-lg text-gray-600 dark:text-gray-300">
-            Everything you need to know about our EMS Narrative Generator.
+            Everything you need to know about our Fire & EMS Narrative Generator.
           </p>
         </div>
         

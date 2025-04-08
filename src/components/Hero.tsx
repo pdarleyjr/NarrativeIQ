@@ -1,9 +1,21 @@
 
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { TouchFeedback, FeedbackCircle } from '@/components/ui/ios-feedback';
+import { triggerHapticFeedback } from '@/utils/platformUtils';
 
 const Hero: React.FC = () => {
   const parallaxRef = useRef<HTMLDivElement>(null);
+  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
+  const [ctaIndex, setCTAIndex] = useState(0);
+  const [showFeedback, setShowFeedback] = useState(false);
+
+  const ctaOptions = [
+    "Subscribe Now",
+    "Generate NFIRS Reports",
+    "Create EMS Narratives",
+    "Save Documentation Time"
+  ];
 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
@@ -13,14 +25,27 @@ const Hero: React.FC = () => {
       const y = (window.innerHeight - e.pageY * 2) / 100;
       
       parallaxRef.current.style.backgroundPosition = `${x}px ${y}px`;
+      setMousePosition({ x: e.clientX, y: e.clientY });
     };
 
     document.addEventListener('mousemove', handleMouseMove);
     
+    // Rotate CTA text every 5 seconds
+    const interval = setInterval(() => {
+      setCTAIndex((prev) => (prev + 1) % ctaOptions.length);
+    }, 5000);
+    
     return () => {
       document.removeEventListener('mousemove', handleMouseMove);
+      clearInterval(interval);
     };
   }, []);
+
+  const handleButtonClick = () => {
+    triggerHapticFeedback();
+    setShowFeedback(true);
+    setTimeout(() => setShowFeedback(false), 500);
+  };
 
   return (
     <div 
@@ -37,7 +62,10 @@ const Hero: React.FC = () => {
       {/* Content */}
       <div className="container mx-auto px-6 py-24 relative z-10">
         <div className="max-w-3xl mx-auto text-center">
-          <div className="inline-block mb-6 px-6 py-2 bg-ems-600/10 dark:bg-ems-500/20 rounded-full backdrop-blur-sm">
+          <div 
+            className="inline-block mb-6 px-6 py-2 bg-ems-600/10 dark:bg-ems-500/20 rounded-full backdrop-blur-sm"
+            style={{ transform: 'perspective(1000px) rotateX(0deg)' }}
+          >
             <span className="text-ems-700 dark:text-ems-300 font-medium">AI-enhanced Fire & EMS reports</span>
           </div>
           
@@ -62,18 +90,39 @@ const Hero: React.FC = () => {
           
           <div className="flex flex-col sm:flex-row justify-center gap-4 animate-fadeIn">
             <a href="/subscribe">
-              <Button className="button-gradient text-lg px-8 py-6 rounded-xl shadow-lg shadow-ems-600/20 dark:shadow-ems-500/20">
-                Subscribe Now
-              </Button>
+              <TouchFeedback onClick={handleButtonClick} feedbackColor="#4f46e5">
+                <Button className="button-gradient text-lg px-8 py-6 rounded-xl shadow-lg shadow-ems-600/20 dark:shadow-ems-500/20">
+                  {ctaOptions[ctaIndex]}
+                </Button>
+              </TouchFeedback>
             </a>
             <a href="/login">
-              <Button variant="outline" className="text-lg px-8 py-6 rounded-xl">
-                Log In
-              </Button>
+              <TouchFeedback onClick={handleButtonClick} feedbackColor="#6366f1">
+                <Button variant="outline" className="text-lg px-8 py-6 rounded-xl">
+                  Log In
+                </Button>
+              </TouchFeedback>
+            </a>
+          </div>
+          
+          <div className="mt-8 text-sm text-gray-500 dark:text-gray-400">
+            <a href="#" className="underline hover:text-ems-500 dark:hover:text-ems-400 mr-4">
+              Privacy Policy
+            </a>
+            <a href="#" className="underline hover:text-ems-500 dark:hover:text-ems-400">
+              Contact Support
             </a>
           </div>
         </div>
       </div>
+      
+      {/* Touch feedback circle */}
+      <FeedbackCircle 
+        visible={showFeedback} 
+        x={mousePosition.x} 
+        y={mousePosition.y} 
+        color="#4f46e5" 
+      />
     </div>
   );
 };
