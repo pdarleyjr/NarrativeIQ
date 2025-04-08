@@ -37,27 +37,18 @@ const Hero: React.FC = () => {
       {/* Content */}
       <div className="container mx-auto px-6 py-24 relative z-10">
         <div className="max-w-3xl mx-auto text-center">
-          {/* Logo added here */}
-          <div className="flex justify-center mb-8">
-            <img 
-              src="/lovable-uploads/608365e0-5539-4f94-898a-8bbe69a08614.png" 
-              alt="NarrativeIQ Logo" 
-              className="w-48 h-auto"
-            />
-          </div>
-          
           <div className="inline-block mb-6 px-6 py-2 bg-ems-600/10 dark:bg-ems-500/20 rounded-full backdrop-blur-sm">
-            <span className="text-ems-700 dark:text-ems-300 font-medium">AI-powered EMS reports</span>
+            <span className="text-ems-700 dark:text-ems-300 font-medium">AI-enhanced Fire & EMS reports</span>
           </div>
           
           <h1 className="text-4xl md:text-6xl font-bold mb-6 text-gray-900 dark:text-white animate-fadeIn">
             <span className="bg-clip-text text-transparent bg-gradient-to-r from-ems-600 to-purple-600 dark:from-ems-400 dark:to-purple-400">
-              EMS Narrative Generator
+              Fire / EMS Narrative Generator
             </span>
           </h1>
           
           <p className="text-xl md:text-2xl mb-8 text-gray-700 dark:text-gray-200 max-w-2xl mx-auto animate-fadeIn">
-            Create compliant, structured EMS reports instantly with our AI-powered generator. Save time and improve accuracy.
+            Create compliant, structured Fire and EMS reports instantly with our AI-powered generator. From NFIRS reports to PCR narratives, save time and improve accuracy.
           </p>
           
           <div className="mb-8 animate-fadeIn">

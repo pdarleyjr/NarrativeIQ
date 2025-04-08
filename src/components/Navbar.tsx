@@ -46,8 +46,12 @@ const Navbar = () => {
       )}
     >
       <div className="container mx-auto flex justify-between items-center">
-        <a href="/" className="text-xl font-bold text-ems-600 dark:text-ems-400">
-          EMS Narratives
+        <a href="/" className="flex items-center">
+          <img 
+            src="/lovable-uploads/608365e0-5539-4f94-898a-8bbe69a08614.png" 
+            alt="NarrativeIQ Logo" 
+            className="h-8 w-auto"
+          />
         </a>
 
         {/* Desktop Menu */}
