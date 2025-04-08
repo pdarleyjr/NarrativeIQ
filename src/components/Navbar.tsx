@@ -50,7 +50,7 @@ const Navbar = () => {
           <img 
             src="/lovable-uploads/608365e0-5539-4f94-898a-8bbe69a08614.png" 
             alt="NarrativeIQ Logo" 
-            className="h-8 w-auto"
+            className="h-12 w-auto"
           />
         </a>
 
