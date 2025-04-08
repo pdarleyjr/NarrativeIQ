@@ -24,19 +24,28 @@ interface FeatureCardProps {
 
 const FeatureCard: React.FC<FeatureCardProps> = ({ title, description, icon, index }) => {
   return (
-    <TouchFeedback feedbackColor="#6366f1">
+    <TouchFeedback 
+      feedbackColor="#6366f1"
+      aria-label={`Feature: ${title}`}
+      aria-describedby={`feature-desc-${index}`}
+    >
       <div 
         className={cn(
           "glass-card p-6 flex flex-col items-start transition-all hover:translate-y-[-5px] duration-300",
-          "animate-fadeIn opacity-0 h-full"
+          "animate-fadeIn opacity-0"
         )}
-        style={{ animationDelay: `${index * 150}ms` }}
+        style={{ 
+          animationDelay: `${index * 150}ms`,
+          height: '100%',  // Ensures all cards have the same height
+          display: 'flex',
+          flexDirection: 'column'
+        }}
       >
         <div className="p-3 bg-ems-100 dark:bg-ems-800/40 rounded-lg mb-4 text-ems-600 dark:text-ems-400">
           {icon}
         </div>
         <h3 className="text-xl font-bold mb-2 text-gray-900 dark:text-white">{title}</h3>
-        <p className="text-gray-600 dark:text-gray-300">{description}</p>
+        <p id={`feature-desc-${index}`} className="text-gray-600 dark:text-gray-300 flex-grow">{description}</p>
       </div>
     </TouchFeedback>
   );
@@ -97,10 +106,14 @@ const Features: React.FC = () => {
   ];
 
   return (
-    <section id="features" className="section-padding bg-gray-50 dark:bg-gray-900">
+    <section 
+      id="features" 
+      className="section-padding bg-gray-50 dark:bg-gray-900"
+      aria-labelledby="features-heading"
+    >
       <div className="container mx-auto">
         <div className="text-center max-w-2xl mx-auto mb-12">
-          <h2 className="text-3xl md:text-4xl font-bold mb-4 text-gray-900 dark:text-white">
+          <h2 id="features-heading" className="text-3xl md:text-4xl font-bold mb-4 text-gray-900 dark:text-white">
             Powerful Features
           </h2>
           <p className="text-lg text-gray-600 dark:text-gray-300">
