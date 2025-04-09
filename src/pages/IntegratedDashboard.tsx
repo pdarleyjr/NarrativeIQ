@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
@@ -11,7 +10,10 @@ import {
   Sparkles, 
   HelpCircle, 
   Maximize, 
-  ArrowUp
+  ArrowUp,
+  Stethoscope,
+  Zap,
+  BriefcaseMedical
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -23,6 +25,10 @@ import { TouchFeedback } from '@/components/ui/ios-feedback';
 import DashboardHeader from '@/components/DashboardHeader';
 import DashboardSidebar from '@/components/DashboardSidebar';
 import NarrativeFormSidebar from '@/components/NarrativeFormSidebar';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { MobileNav } from '@/components/ui/mobile-nav';
+import { MobileNarrativeDrawer } from '@/components/MobileNarrativeDrawer';
+import { MobileSessionsDrawer } from '@/components/MobileSessionsDrawer';
 
 interface Message {
   type: 'user' | 'assistant';
@@ -125,14 +131,14 @@ const defaultFormData: NarrativeFormData = {
 const IntegratedDashboard = () => {
   const navigate = useNavigate();
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const isMobile = useIsMobile();
   
-  // State management
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [userInput, setUserInput] = useState('');
   const [sessions, setSessions] = useState<Session[]>([]);
   const [activeSession, setActiveSession] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [leftSidebarVisible, setLeftSidebarVisible] = useState(true);
+  const [leftSidebarVisible, setLeftSidebarVisible] = useState(!isMobile);
   const [rightSidebarVisible, setRightSidebarVisible] = useState(false);
   const [activeTab, setActiveTab] = useState("dispatch");
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -149,23 +155,30 @@ const IntegratedDashboard = () => {
   const [transcript, setTranscript] = useState('');
   const [showWelcome, setShowWelcome] = useState(true);
   
-  // Create initial session
+  const [mobileNarrativeDrawerOpen, setMobileNarrativeDrawerOpen] = useState(false);
+  const [mobileSessionsDrawerOpen, setMobileSessionsDrawerOpen] = useState(false);
+  const [quickActionsExpanded, setQuickActionsExpanded] = useState(false);
+  
   useEffect(() => {
     if (sessions.length === 0) {
       handleNewSession();
     }
     
-    // Check system preference for dark mode
     if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
       setIsDarkMode(true);
       document.documentElement.classList.add('dark');
     }
     
-    // Scroll to bottom when messages change
     scrollToBottom();
   }, []);
   
-  // Setup speech recognition
+  useEffect(() => {
+    if (isMobile) {
+      setLeftSidebarVisible(false);
+      setRightSidebarVisible(false);
+    }
+  }, [isMobile]);
+  
   useEffect(() => {
     if ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window) {
       const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -216,7 +229,7 @@ const IntegratedDashboard = () => {
       }
     };
   }, [isRecording]);
-
+  
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
@@ -240,7 +253,7 @@ const IntegratedDashboard = () => {
       toast.success('Voice input started');
     }
   };
-
+  
   const createNewSession = () => {
     const id = `session-${Date.now()}`;
     const date = new Date();
@@ -322,7 +335,6 @@ const IntegratedDashboard = () => {
       setIsGenerating(false);
     }, 1500);
     
-    // Scroll to bottom after sending message
     setTimeout(scrollToBottom, 100);
   };
   
@@ -358,7 +370,6 @@ const IntegratedDashboard = () => {
     
     addMessageToSession(assistantMessage);
     
-    // Scroll to bottom after receiving response
     setTimeout(scrollToBottom, 100);
   };
   
@@ -462,7 +473,6 @@ const IntegratedDashboard = () => {
     addMessageToSession(assistantMessage);
     toast.success("Narrative generated successfully");
     
-    // Scroll to bottom after generating narrative
     setTimeout(scrollToBottom, 100);
   };
   
@@ -492,8 +502,8 @@ I'm your AI narrative assistant, designed to help EMS professionals create detai
 ## How to Use
 - **Type directly** in the input below to ask questions or create a narrative
 - **Click the mic button** to use voice input
-- **Use the form** on the right to enter patient details
-- **Access sessions** from the left panel to continue previous work
+- **${isMobile ? 'Tap the form button' : 'Use the form on the right'}** to enter patient details
+- **Access sessions** from the ${isMobile ? 'sessions drawer' : 'left panel'} to continue previous work
 
 ## Quick Actions
 - Type "Generate narrative" to create a new narrative
@@ -506,41 +516,94 @@ Need help? Just ask me anything about EMS narratives, protocols, or how to use t
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col">
-      <DashboardHeader 
-        toggleSidebar={() => setLeftSidebarVisible(!leftSidebarVisible)}
-        toggleSettings={() => setIsSettingsOpen(true)}
-        sidebarVisible={leftSidebarVisible}
-        isDarkMode={isDarkMode}
-        toggleDarkMode={toggleDarkMode}
-        userName="John"
-      />
+      {!isMobile ? (
+        <DashboardHeader 
+          toggleSidebar={() => setLeftSidebarVisible(!leftSidebarVisible)}
+          toggleSettings={() => setIsSettingsOpen(true)}
+          sidebarVisible={leftSidebarVisible}
+          isDarkMode={isDarkMode}
+          toggleDarkMode={toggleDarkMode}
+          userName="John"
+        />
+      ) : (
+        <div className="fixed top-0 inset-x-0 h-14 border-b bg-background z-30 flex items-center justify-between px-4">
+          <div className="flex items-center gap-3">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-8 w-8 p-0"
+              onClick={() => setMobileSessionsDrawerOpen(true)}
+            >
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect width="18" height="18" x="3" y="3" rx="2" />
+                <path d="M9 3v18" />
+              </svg>
+            </Button>
+            <h1 className="text-lg font-semibold">NarrativeIQ</h1>
+          </div>
+          <div className="flex items-center gap-1">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-8 w-8 p-0"
+              onClick={toggleDarkMode}
+            >
+              {isDarkMode ? (
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="5" />
+                  <path d="M12 1v2M12 21v2M4.2 4.2l1.4 1.4M18.4 18.4l1.4 1.4M1 12h2M21 12h2M4.2 19.8l1.4-1.4M18.4 5.6l1.4-1.4" />
+                </svg>
+              ) : (
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
+                </svg>
+              )}
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-8 w-8 p-0"
+              onClick={() => setIsSettingsOpen(true)}
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />
+                <circle cx="12" cy="12" r="3" />
+              </svg>
+            </Button>
+          </div>
+        </div>
+      )}
       
-      <DashboardSidebar 
-        visible={leftSidebarVisible}
-        sessions={sessions}
-        activeSession={activeSession}
-        onNewSession={handleNewSession}
-        onSelectSession={handleSelectSession}
-        onRenameSession={handleRenameSession}
-        onDeleteSession={handleDeleteSession}
-      />
+      {!isMobile && (
+        <>
+          <DashboardSidebar 
+            visible={leftSidebarVisible}
+            sessions={sessions}
+            activeSession={activeSession}
+            onNewSession={handleNewSession}
+            onSelectSession={handleSelectSession}
+            onRenameSession={handleRenameSession}
+            onDeleteSession={handleDeleteSession}
+          />
+          
+          <NarrativeFormSidebar 
+            visible={rightSidebarVisible}
+            toggleSidebar={() => setRightSidebarVisible(!rightSidebarVisible)}
+            activeTab={activeTab}
+            onTabChange={setActiveTab}
+            onSubmit={() => generateNarrative({...defaultFormData, ...narrativeSettings})}
+            onOpenSettings={() => setIsSettingsOpen(true)}
+          />
+        </>
+      )}
       
-      <NarrativeFormSidebar 
-        visible={rightSidebarVisible}
-        toggleSidebar={() => setRightSidebarVisible(!rightSidebarVisible)}
-        activeTab={activeTab}
-        onTabChange={setActiveTab}
-        onSubmit={handleGenerateFromForm}
-        onOpenSettings={() => setIsSettingsOpen(true)}
-      />
-      
-      <main className={`flex-1 pt-16 transition-all duration-300 ease-in-out ${
-        leftSidebarVisible ? 'ml-64' : 'ml-0'
+      <main className={`flex-1 ${isMobile ? 'pt-14' : 'pt-16'} transition-all duration-300 ease-in-out ${
+        leftSidebarVisible && !isMobile ? 'ml-64' : 'ml-0'
       } ${
-        rightSidebarVisible ? 'mr-80' : 'mr-0'
+        rightSidebarVisible && !isMobile ? 'mr-80' : 'mr-0'
       }`}>
-        <div className="container mx-auto p-4 max-w-5xl h-[calc(100vh-64px)]">
-          <Card className="h-full flex flex-col overflow-hidden shadow-md">
+        <div className={`${isMobile ? 'p-1' : 'container mx-auto p-4 max-w-5xl'} h-[calc(100vh-64px)]`}>
+          <Card className={`h-full flex flex-col overflow-hidden shadow-md ${isMobile ? 'rounded-b-none border-b-0' : ''}`}>
             <CardContent className="p-0 flex-1 flex flex-col overflow-hidden">
               <div className="flex-1 overflow-y-auto p-4">
                 {!showWelcome && activeSessionData?.messages && activeSessionData.messages.length > 0 ? (
@@ -557,13 +620,60 @@ Need help? Just ask me anything about EMS narratives, protocols, or how to use t
                 <div ref={messagesEndRef} />
               </div>
               
-              <div className="p-4 border-t border-gray-200 dark:border-gray-700">
+              {isMobile && quickActionsExpanded && (
+                <div className="p-2 border-t flex items-center gap-1 overflow-x-auto bg-background/95 backdrop-blur-sm">
+                  <TouchFeedback>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="whitespace-nowrap"
+                      onClick={() => {
+                        setUserInput((prev) => prev + " Generate a full arrest narrative");
+                        setQuickActionsExpanded(false);
+                      }}
+                    >
+                      <Zap className="h-3.5 w-3.5 mr-1" />
+                      Full Arrest
+                    </Button>
+                  </TouchFeedback>
+                  <TouchFeedback>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="whitespace-nowrap"
+                      onClick={() => {
+                        setUserInput((prev) => prev + " Generate a chest pain narrative");
+                        setQuickActionsExpanded(false);
+                      }}
+                    >
+                      <Stethoscope className="h-3.5 w-3.5 mr-1" />
+                      Chest Pain
+                    </Button>
+                  </TouchFeedback>
+                  <TouchFeedback>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="whitespace-nowrap"
+                      onClick={() => {
+                        setUserInput((prev) => prev + " Generate a trauma narrative");
+                        setQuickActionsExpanded(false);
+                      }}
+                    >
+                      <BriefcaseMedical className="h-3.5 w-3.5 mr-1" />
+                      Trauma
+                    </Button>
+                  </TouchFeedback>
+                </div>
+              )}
+              
+              <div className={`${isMobile ? 'p-2' : 'p-4'} border-t border-gray-200 dark:border-gray-700`}>
                 <div className="relative">
                   <Textarea
                     value={userInput}
                     onChange={(e) => setUserInput(e.target.value)}
                     placeholder={isRecording ? 'Listening...' : 'Type your message here or ask for help...'}
-                    className={`min-h-[60px] pr-24 ${isRecording ? 'bg-red-50 dark:bg-red-900/10' : ''}`}
+                    className={`min-h-[${isMobile ? '50' : '60'}px] ${isMobile ? 'text-base' : ''} pr-24 ${isRecording ? 'bg-red-50 dark:bg-red-900/10' : ''}`}
                     onKeyDown={(e) => {
                       if (e.key === 'Enter' && !e.shiftKey) {
                         e.preventDefault();
@@ -578,6 +688,21 @@ Need help? Just ask me anything about EMS narratives, protocols, or how to use t
                   )}
                   
                   <div className="absolute right-2 bottom-2 flex items-center gap-1">
+                    {isMobile && (
+                      <TouchFeedback feedbackColor="#6366f1">
+                        <Button
+                          onClick={() => setQuickActionsExpanded(!quickActionsExpanded)}
+                          variant="secondary"
+                          size="icon"
+                          className="h-8 w-8"
+                          title="Quick actions"
+                          aria-label="Quick actions"
+                        >
+                          <Zap className="h-4 w-4" />
+                        </Button>
+                      </TouchFeedback>
+                    )}
+                    
                     <TouchFeedback feedbackColor="#6366f1">
                       <Button
                         onClick={toggleSpeechRecognition}
@@ -593,12 +718,12 @@ Need help? Just ask me anything about EMS narratives, protocols, or how to use t
                     
                     <TouchFeedback feedbackColor="#6366f1">
                       <Button
-                        onClick={() => setRightSidebarVisible(!rightSidebarVisible)}
+                        onClick={() => isMobile ? setMobileNarrativeDrawerOpen(true) : setRightSidebarVisible(!rightSidebarVisible)}
                         variant="secondary"
                         size="icon"
                         className="h-8 w-8"
-                        title="Toggle form sidebar"
-                        aria-label="Toggle form sidebar"
+                        title="Narrative form"
+                        aria-label="Narrative form"
                       >
                         <Sparkles className="h-4 w-4" />
                       </Button>
@@ -620,24 +745,26 @@ Need help? Just ask me anything about EMS narratives, protocols, or how to use t
                   </div>
                 </div>
                 
-                <div className="flex justify-between items-center mt-2 text-xs text-gray-500 dark:text-gray-400">
-                  <div>
-                    <span>
-                      Press <kbd className="px-1 py-0.5 bg-gray-100 dark:bg-gray-800 rounded border border-gray-300 dark:border-gray-700">Enter</kbd> to send
-                    </span>
+                {!isMobile && (
+                  <div className="flex justify-between items-center mt-2 text-xs text-gray-500 dark:text-gray-400">
+                    <div>
+                      <span>
+                        Press <kbd className="px-1 py-0.5 bg-gray-100 dark:bg-gray-800 rounded border border-gray-300 dark:border-gray-700">Enter</kbd> to send
+                      </span>
+                    </div>
+                    <div>
+                      <button 
+                        className="text-ems-600 dark:text-ems-400 hover:underline flex items-center"
+                        onClick={() => {
+                          generateNarrative({...defaultFormData, ...narrativeSettings});
+                        }}
+                      >
+                        <Sparkles className="h-3 w-3 mr-1" />
+                        <span>Generate Full Narrative</span>
+                      </button>
+                    </div>
                   </div>
-                  <div>
-                    <button 
-                      className="text-ems-600 dark:text-ems-400 hover:underline flex items-center"
-                      onClick={() => {
-                        generateNarrative({...defaultFormData, ...narrativeSettings});
-                      }}
-                    >
-                      <Sparkles className="h-3 w-3 mr-1" />
-                      <span>Generate Full Narrative</span>
-                    </button>
-                  </div>
-                </div>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -646,7 +773,7 @@ Need help? Just ask me anything about EMS narratives, protocols, or how to use t
       
       {isSettingsOpen && (
         <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center">
-          <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg max-w-md w-full">
+          <div className={`bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg ${isMobile ? 'max-w-[95%] w-full' : 'max-w-md w-full'}`}>
             <h2 className="text-xl font-bold mb-4">Narrative Settings</h2>
             <NarrativeSettingsDialog 
               initialSettings={narrativeSettings} 
@@ -658,6 +785,35 @@ Need help? Just ask me anything about EMS narratives, protocols, or how to use t
             />
           </div>
         </div>
+      )}
+      
+      {isMobile && (
+        <>
+          <MobileNav 
+            userName="John"
+            activeSession={activeSession}
+            onNewSession={handleNewSession}
+            onOpenSessionDrawer={() => setMobileSessionsDrawerOpen(true)}
+            onOpenSettingsDrawer={() => setIsSettingsOpen(true)}
+          />
+          
+          <MobileNarrativeDrawer 
+            open={mobileNarrativeDrawerOpen}
+            onOpenChange={setMobileNarrativeDrawerOpen}
+            onGenerateNarrative={() => generateNarrative({...defaultFormData, ...narrativeSettings})}
+          />
+          
+          <MobileSessionsDrawer 
+            open={mobileSessionsDrawerOpen}
+            onOpenChange={setMobileSessionsDrawerOpen}
+            sessions={sessions}
+            activeSession={activeSession}
+            onNewSession={handleNewSession}
+            onSelectSession={handleSelectSession}
+            onRenameSession={handleRenameSession}
+            onDeleteSession={handleDeleteSession}
+          />
+        </>
       )}
     </div>
   );
