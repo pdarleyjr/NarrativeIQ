@@ -16,6 +16,7 @@ import ViewNarrative from "./pages/ViewNarrative";
 import KnowledgeBase from "./pages/KnowledgeBase";
 import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
+import IntegratedDashboard from "./pages/IntegratedDashboard";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -43,7 +44,8 @@ const App = () => {
             <Route path="/login" element={<Login />} />
             <Route path="/subscribe" element={<Subscribe />} />
             <Route path="/success" element={<Success />} />
-            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/dashboard" element={<IntegratedDashboard />} />
+            <Route path="/old-dashboard" element={<Dashboard />} />
             <Route path="/create-narrative" element={<CreateNarrative />} />
             <Route path="/view-narrative/:id" element={<ViewNarrative />} />
             <Route path="/knowledge-base" element={<KnowledgeBase />} />

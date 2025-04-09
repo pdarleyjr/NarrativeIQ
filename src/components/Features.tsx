@@ -31,21 +31,18 @@ const FeatureCard: React.FC<FeatureCardProps> = ({ title, description, icon, ind
     >
       <div 
         className={cn(
-          "glass-card p-6 flex flex-col items-start transition-all hover:translate-y-[-5px] duration-300",
+          "glass-card p-6 flex flex-col h-full transition-all hover:translate-y-[-5px] duration-300",
           "animate-fadeIn opacity-0"
         )}
         style={{ 
           animationDelay: `${index * 150}ms`,
-          height: '100%',  // Ensures all cards have the same height
-          display: 'flex',
-          flexDirection: 'column'
         }}
       >
         <div className="p-3 bg-ems-100 dark:bg-ems-800/40 rounded-lg mb-4 text-ems-600 dark:text-ems-400">
           {icon}
         </div>
         <h3 className="text-xl font-bold mb-2 text-gray-900 dark:text-white">{title}</h3>
-        <p id={`feature-desc-${index}`} className="text-gray-600 dark:text-gray-300 flex-grow">{description}</p>
+        <p id={`feature-desc-${index}`} className="text-gray-600 dark:text-gray-300">{description}</p>
       </div>
     </TouchFeedback>
   );
