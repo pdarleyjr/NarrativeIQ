@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { 
   FileText, 
@@ -273,7 +272,7 @@ const DashboardSidebar = ({
                     <div className="truncate flex-1">
                       <p className="truncate text-sm font-medium">{session.name}</p>
                       <p className="text-xs text-gray-500 dark:text-gray-400 flex items-center">
-                        <Clock className="h-3 w-3 mr-1" inline="true" />
+                        <Clock className="h-3 w-3 mr-1" />
                         {/* Would use actual session time in real app */}
                         {format(new Date(), 'hh:mm a')}
                       </p>
