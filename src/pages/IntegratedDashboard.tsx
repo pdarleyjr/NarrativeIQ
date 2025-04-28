@@ -4,25 +4,24 @@ import { format } from 'date-fns';
 import { toast } from "sonner";
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Send,
   PlusCircle,
   Mic,
   MicOff,
   Sparkles,
   HelpCircle,
-  Maximize,
-  ArrowUp,
-  Stethoscope,
   Zap,
   BriefcaseMedical,
   BookOpen,
-  FileText
+  FileText,
+  Menu,
+  ArrowUp,
+  Stethoscope
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import { Drawer, DrawerContent, DrawerTrigger } from '@/components/ui/drawer';
+import { Tabs, TabsContent } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
-import { Card, CardContent } from '@/components/ui/card';
-import ChatSession from '@/components/ChatSession';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import NarrativeSettingsDialog from '@/components/NarrativeSettingsDialog';
 import ProtocolQueryDialog from '@/components/ProtocolQueryDialog';
 import CustomInstructionsDialog from '@/components/CustomInstructionsDialog';
@@ -31,14 +30,15 @@ import DashboardHeader from '@/components/DashboardHeader';
 import DashboardSidebar from '@/components/DashboardSidebar';
 import NarrativeFormSidebar from '@/components/NarrativeFormSidebar';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { MobileNav } from '@/components/ui/mobile-nav';
 import { MobileNarrativeDrawer } from '@/components/MobileNarrativeDrawer';
 import { MobileSessionsDrawer } from '@/components/MobileSessionsDrawer';
 import { NavigationBar } from '@/components/ios/NavigationBar';
 import { TabBar } from '@/components/ios/TabBar';
-import { NarrativeCard } from '@/components/ios/NarrativeCard';
-import { LottieLoader, GeneratingLoader } from '@/components/ios/LottieLoader';
-import { useSwipeGesture, useSwipeToGoBack, usePullToRefresh } from '@/hooks/useSwipeGesture';
+import ChatSession from '@/components/ChatSession';
+import AppTabs from '@/components/dashboard/AppTabs';
+import ChatPanel from '@/components/dashboard/ChatPanel';
+import EMSPanel from '@/components/dashboard/EMSPanel';
+import NFIRSPanel from '@/components/dashboard/NFIRSPanel';
 
 interface Message {
   type: 'user' | 'assistant';
@@ -150,7 +150,7 @@ const IntegratedDashboard = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [leftSidebarVisible, setLeftSidebarVisible] = useState(!isMobile);
   const [rightSidebarVisible, setRightSidebarVisible] = useState(false);
-  const [activeTab, setActiveTab] = useState("dispatch");
+  const [activeTab, setActiveTab] = useState("chat");
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isProtocolQueryOpen, setIsProtocolQueryOpen] = useState(false);
   const [isCustomInstructionsOpen, setIsCustomInstructionsOpen] = useState(false);
@@ -166,10 +166,13 @@ const IntegratedDashboard = () => {
   const [recognition, setRecognition] = useState<SpeechRecognition | null>(null);
   const [transcript, setTranscript] = useState('');
   const [showWelcome, setShowWelcome] = useState(true);
+  const [narrativeText, setNarrativeText] = useState('');
+  const [nfirsReportText, setNfirsReportText] = useState('');
   
   const [mobileNarrativeDrawerOpen, setMobileNarrativeDrawerOpen] = useState(false);
   const [mobileSessionsDrawerOpen, setMobileSessionsDrawerOpen] = useState(false);
   const [quickActionsExpanded, setQuickActionsExpanded] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   
   useEffect(() => {
     if (sessions.length === 0) {
@@ -484,6 +487,8 @@ const IntegratedDashboard = () => {
       mockResponse += "This is a sample narrative. To generate a custom narrative, please fill out the form fields below.";
     }
 
+    setNarrativeText(mockResponse);
+    
     const assistantMessage: Message = {
       type: 'assistant',
       content: mockResponse,
@@ -493,7 +498,41 @@ const IntegratedDashboard = () => {
     addMessageToSession(assistantMessage);
     toast.success("Narrative generated successfully");
     
+    // Switch to the EMS tab after generating a narrative
+    setActiveTab("ems");
+    
     setTimeout(scrollToBottom, 100);
+  };
+  
+  const generateNFIRSReport = (data: any) => {
+    const mockReport = `NFIRS REPORT\n\n` +
+      `Incident Number: ${data?.['NFIRS-1']?.['Incident Number'] || 'N/A'}\n` +
+      `Incident Date: ${data?.['NFIRS-1']?.['Incident Date'] || 'N/A'}\n` +
+      `Incident Time: ${data?.['NFIRS-1']?.['Incident Time'] || 'N/A'}\n` +
+      `Location: ${data?.['NFIRS-1']?.['Street Address'] || 'N/A'}, ${data?.['NFIRS-1']?.['City'] || 'N/A'}, ${data?.['NFIRS-1']?.['State'] || 'N/A'} ${data?.['NFIRS-1']?.['Zip Code'] || 'N/A'}\n\n` +
+      
+      `Fire Details:\n` +
+      `Area of Fire Origin: ${data?.['NFIRS-2']?.['Area of Fire Origin'] || 'N/A'}\n` +
+      `Heat Source: ${data?.['NFIRS-2']?.['Heat Source'] || 'N/A'}\n` +
+      `Cause of Ignition: ${data?.['NFIRS-2']?.['Cause of Ignition'] || 'N/A'}\n\n` +
+      
+      `Structure Information:\n` +
+      `Building Status: ${data?.['NFIRS-3']?.['Building Status'] || 'N/A'}\n` +
+      `Building Height: ${data?.['NFIRS-3']?.['Building Height'] || 'N/A'}\n` +
+      `Fire Origin Floor: ${data?.['NFIRS-3']?.['Fire Origin Floor'] || 'N/A'}\n` +
+      `Structure Type: ${data?.['NFIRS-3']?.['Structure Type'] || 'N/A'}\n\n` +
+      
+      `EMS Information:\n` +
+      `Patient Age: ${data?.['NFIRS-6']?.['Patient Age'] || 'N/A'}\n` +
+      `Patient Gender: ${data?.['NFIRS-6']?.['Patient Gender'] || 'N/A'}\n` +
+      `Chief Complaint: ${data?.['NFIRS-6']?.['Chief Complaint'] || 'N/A'}\n` +
+      `Transport Disposition: ${data?.['NFIRS-6']?.['Transport Disposition'] || 'N/A'}\n`;
+    
+    setNfirsReportText(mockReport);
+    toast.success("NFIRS Report generated successfully");
+    
+    // Switch to the NFIRS tab after generating a report
+    setActiveTab("nfirs");
   };
   
   const handleUpdateSettings = (newSettings: any) => {
@@ -506,10 +545,6 @@ const IntegratedDashboard = () => {
       ...newSettings
     }));
     toast.success("Settings updated");
-  };
-  
-  const handleGenerateFromForm = () => {
-    generateNarrative({...defaultFormData, ...narrativeSettings});
   };
   
   const activeSessionData = sessions.find(s => s.id === activeSession);
@@ -535,302 +570,174 @@ Need help? Just ask me anything about EMS narratives, protocols, or how to use t
   };
 
   return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col">
-        {isMobile ? (
-          <NavigationBar
-            title="EZ Narratives"
-            largeTitle={true}
-            rightElement={
-              <div className="flex items-center gap-1">
-                <TouchFeedback>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-8 w-8 p-0"
-                    onClick={toggleDarkMode}
-                  >
-                    {isDarkMode ? (
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <circle cx="12" cy="12" r="5" />
-                        <path d="M12 1v2M12 21v2M4.2 4.2l1.4 1.4M18.4 18.4l1.4 1.4M1 12h2M21 12h2M4.2 19.8l1.4-1.4M18.4 5.6l1.4-1.4" />
-                      </svg>
-                    ) : (
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
-                      </svg>
-                    )}
-                  </Button>
-                </TouchFeedback>
-                <TouchFeedback>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-8 w-8 p-0"
-                    onClick={() => setIsSettingsOpen(true)}
-                  >
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />
-                      <circle cx="12" cy="12" r="3" />
-                    </svg>
-                  </Button>
-                </TouchFeedback>
-              </div>
-            }
-          />
-        ) : (
-          <DashboardHeader
-            toggleSidebar={() => setLeftSidebarVisible(!leftSidebarVisible)}
-            toggleSettings={() => setIsSettingsOpen(true)}
-            sidebarVisible={leftSidebarVisible}
-            isDarkMode={isDarkMode}
-            toggleDarkMode={toggleDarkMode}
-            userName="John"
-          />
-        )}
-        
-        {!isMobile && (
-          <>
-            <DashboardSidebar
-              visible={leftSidebarVisible}
-              sessions={sessions}
-              activeSession={activeSession}
-              onNewSession={handleNewSession}
-              onSelectSession={handleSelectSession}
-              onRenameSession={handleRenameSession}
-              onDeleteSession={handleDeleteSession}
-              navigate={navigate}
-              setIsSettingsOpen={setIsSettingsOpen}
-              setIsCustomInstructionsOpen={setIsCustomInstructionsOpen}
-            />
-            
-            <NarrativeFormSidebar
-              visible={rightSidebarVisible}
-              toggleSidebar={() => setRightSidebarVisible(!rightSidebarVisible)}
-              activeTab={activeTab}
-              onTabChange={setActiveTab}
-              onSubmit={() => generateNarrative({...defaultFormData, ...narrativeSettings})}
-              onOpenSettings={() => setIsSettingsOpen(true)}
-            />
-          </>
-        )}
-      <main className={`flex-1 ${isMobile ? 'pt-14' : 'pt-16'} transition-all duration-300 ease-in-out ${
-        leftSidebarVisible && !isMobile ? 'ml-64' : 'ml-0'
-      } ${
-        rightSidebarVisible && !isMobile ? 'mr-80' : 'mr-0'
-      }`}>
-        <div className={`${isMobile ? 'p-1' : 'container mx-auto p-4 max-w-5xl'} h-[calc(100vh-64px)]`}>
-          <Card className={`h-full flex flex-col overflow-hidden shadow-md ${isMobile ? 'rounded-b-none border-b-0' : ''}`}>
-            <CardContent className="p-0 flex-1 flex flex-col overflow-hidden">
-              <div className="flex-1 overflow-y-auto p-4">
-                {!showWelcome && activeSessionData?.messages && activeSessionData.messages.length > 0 ? (
-                  <ChatSession 
-                    messages={activeSessionData.messages} 
-                    onSavePreset={() => {}}
-                  />
-                ) : (
-                  <ChatSession 
-                    messages={[welcomeMessage]} 
-                    onSavePreset={() => {}}
-                  />
-                )}
-                <div ref={messagesEndRef} />
-              </div>
-              
-              {isMobile && quickActionsExpanded && (
-                <div className="p-2 border-t flex items-center gap-1 overflow-x-auto bg-background/95 backdrop-blur-sm">
-                  <TouchFeedback>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="whitespace-nowrap"
-                      onClick={() => {
-                        setUserInput((prev) => prev + " Generate a full arrest narrative");
-                        setQuickActionsExpanded(false);
-                      }}
-                    >
-                      <Zap className="h-3.5 w-3.5 mr-1" />
-                      Full Arrest
-                    </Button>
-                  </TouchFeedback>
-                  <TouchFeedback>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="whitespace-nowrap"
-                      onClick={() => {
-                        setUserInput((prev) => prev + " Generate a chest pain narrative");
-                        setQuickActionsExpanded(false);
-                      }}
-                    >
-                      <Stethoscope className="h-3.5 w-3.5 mr-1" />
-                      Chest Pain
-                    </Button>
-                  </TouchFeedback>
-                  <TouchFeedback>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="whitespace-nowrap"
-                      onClick={() => {
-                        setUserInput((prev) => prev + " Generate a trauma narrative");
-                        setQuickActionsExpanded(false);
-                      }}
-                    >
-                      <BriefcaseMedical className="h-3.5 w-3.5 mr-1" />
-                      Trauma
-                    </Button>
-                  </TouchFeedback>
-                  <TouchFeedback>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="whitespace-nowrap"
-                      onClick={() => {
-                        setIsProtocolQueryOpen(true);
-                        setQuickActionsExpanded(false);
-                      }}
-                    >
-                      <BookOpen className="h-3.5 w-3.5 mr-1" />
-                      Protocol Q&A
-                    </Button>
-                  </TouchFeedback>
-                  <TouchFeedback>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="whitespace-nowrap"
-                      onClick={() => {
-                        setIsCustomInstructionsOpen(true);
-                        setQuickActionsExpanded(false);
-                      }}
-                    >
-                      <FileText className="h-3.5 w-3.5 mr-1" />
-                      Custom Instructions
-                    </Button>
-                  </TouchFeedback>
-                </div>
-              )}
-              
-              <div className={`${isMobile ? 'p-2' : 'p-4'} border-t border-gray-200 dark:border-gray-700`}>
-                <div className="relative">
-                  <Textarea
-                    value={userInput}
-                    onChange={(e) => setUserInput(e.target.value)}
-                    placeholder={isRecording ? 'Listening...' : 'Type your message here or ask for help...'}
-                    className={`min-h-[${isMobile ? '50' : '60'}px] ${isMobile ? 'text-base' : ''} pr-24 ${isRecording ? 'bg-red-50 dark:bg-red-900/10' : ''}`}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' && !e.shiftKey) {
-                        e.preventDefault();
-                        handleSendMessage();
-                      }
-                    }}
-                  />
-                  {transcript && (
-                    <div className="absolute bottom-full left-0 right-0 mb-1 bg-gray-100 dark:bg-gray-800 p-2 rounded-md text-sm">
-                      {transcript}
-                    </div>
-                  )}
-                  
-                  <div className="absolute right-2 bottom-2 flex items-center gap-1">
-                    {isMobile && (
-                      <TouchFeedback feedbackColor="#6366f1">
-                        <Button
-                          onClick={() => setQuickActionsExpanded(!quickActionsExpanded)}
-                          variant="secondary"
-                          size="icon"
-                          className="h-8 w-8"
-                          title="Quick actions"
-                          aria-label="Quick actions"
-                        >
-                          <Zap className="h-4 w-4" />
-                        </Button>
-                      </TouchFeedback>
-                    )}
-                    
-                    <TouchFeedback feedbackColor="#6366f1">
-                      <Button
-                        onClick={toggleSpeechRecognition}
-                        variant={isRecording ? "destructive" : "secondary"}
-                        size="icon"
-                        className="h-8 w-8"
-                        title={isRecording ? 'Stop recording' : 'Start voice recording'}
-                        aria-label={isRecording ? 'Stop recording' : 'Start voice recording'}
-                      >
-                        {isRecording ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
-                      </Button>
-                    </TouchFeedback>
-                    
-                    <TouchFeedback feedbackColor="#6366f1">
-                      <Button
-                        onClick={() => isMobile ? setMobileNarrativeDrawerOpen(true) : setRightSidebarVisible(!rightSidebarVisible)}
-                        variant="secondary"
-                        size="icon"
-                        className="h-8 w-8"
-                        title="Narrative form"
-                        aria-label="Narrative form"
-                      >
-                        <Sparkles className="h-4 w-4" />
-                      </Button>
-                    </TouchFeedback>
-                    
-                    <TouchFeedback feedbackColor="#4f46e5">
-                      <Button
-                        onClick={handleSendMessage}
-                        disabled={isGenerating || !userInput.trim()}
-                        className="h-8 w-8 button-gradient"
-                        aria-label="Send message"
-                      >
-                        {isGenerating ? 
-                          <div className="h-4 w-4 rounded-full border-2 border-white border-t-transparent animate-spin" /> : 
-                          <ArrowUp className="h-4 w-4" />
-                        }
-                      </Button>
-                    </TouchFeedback>
-                  </div>
-                </div>
-                
-                {!isMobile && (
-                  <div className="flex justify-between items-center mt-2 text-xs text-gray-500 dark:text-gray-400">
-                    <div>
-                      <span>
-                        Press <kbd className="px-1 py-0.5 bg-gray-100 dark:bg-gray-800 rounded border border-gray-300 dark:border-gray-700">Enter</kbd> to send
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-4">
-                      <button
-                        className="text-ems-600 dark:text-ems-400 hover:underline flex items-center"
-                        onClick={() => {
-                          generateNarrative({...defaultFormData, ...narrativeSettings});
-                        }}
-                      >
-                        <Sparkles className="h-3 w-3 mr-1" />
-                        <span>Generate Full Narrative</span>
-                      </button>
-                      
-                      <button
-                        className="text-ems-600 dark:text-ems-400 hover:underline flex items-center"
-                        onClick={() => setIsProtocolQueryOpen(true)}
-                      >
-                        <BookOpen className="h-3 w-3 mr-1" />
-                        <span>Protocol Q&A</span>
-                      </button>
-                      
-                      <button
-                        className="text-ems-600 dark:text-ems-400 hover:underline flex items-center"
-                        onClick={() => setIsCustomInstructionsOpen(true)}
-                      >
-                        <FileText className="h-3 w-3 mr-1" />
-                        <span>Custom Instructions</span>
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </main>
+    <div className="flex h-screen bg-gray-50 dark:bg-gray-900">
+      {/* Mobile Drawer Sidebar */}
+      {isMobile && (
+        <Drawer open={sidebarOpen} onOpenChange={setSidebarOpen}>
+          <DrawerTrigger asChild>
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="fixed top-4 left-4 z-50"
+              aria-label="Open sidebar"
+            >
+              <Menu className="h-5 w-5" />
+            </Button>
+          </DrawerTrigger>
+          <DrawerContent className="h-[85vh]">
+            <div className="h-full overflow-auto">
+              <DashboardSidebar
+                visible={true}
+                sessions={sessions}
+                activeSession={activeSession}
+                onNewSession={handleNewSession}
+                onSelectSession={(id) => {
+                  handleSelectSession(id);
+                  setSidebarOpen(false);
+                }}
+                onRenameSession={handleRenameSession}
+                onDeleteSession={handleDeleteSession}
+                navigate={navigate}
+                setIsSettingsOpen={setIsSettingsOpen}
+                setIsCustomInstructionsOpen={setIsCustomInstructionsOpen}
+              />
+            </div>
+          </DrawerContent>
+        </Drawer>
+      )}
       
+      {/* Header */}
+      {isMobile ? (
+        <NavigationBar
+          title="EZ Narratives"
+          largeTitle={true}
+          rightElement={
+            <div className="flex items-center gap-1">
+              <TouchFeedback>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 w-8 p-0"
+                  onClick={toggleDarkMode}
+                >
+                  {isDarkMode ? (
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <circle cx="12" cy="12" r="5" />
+                      <path d="M12 1v2M12 21v2M4.2 4.2l1.4 1.4M18.4 18.4l1.4 1.4M1 12h2M21 12h2M4.2 19.8l1.4-1.4M18.4 5.6l1.4-1.4" />
+                    </svg>
+                  ) : (
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
+                    </svg>
+                  )}
+                </Button>
+              </TouchFeedback>
+              <TouchFeedback>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 w-8 p-0"
+                  onClick={() => setIsSettingsOpen(true)}
+                >
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />
+                    <circle cx="12" cy="12" r="3" />
+                  </svg>
+                </Button>
+              </TouchFeedback>
+            </div>
+          }
+        />
+      ) : (
+        <DashboardHeader
+          toggleSidebar={() => setLeftSidebarVisible(!leftSidebarVisible)}
+          toggleSettings={() => setIsSettingsOpen(true)}
+          sidebarVisible={leftSidebarVisible}
+          isDarkMode={isDarkMode}
+          toggleDarkMode={toggleDarkMode}
+          userName="John"
+        />
+      )}
+      
+      {/* Desktop Sidebar */}
+      {!isMobile && (
+        <>
+          <DashboardSidebar
+            visible={leftSidebarVisible}
+            sessions={sessions}
+            activeSession={activeSession}
+            onNewSession={handleNewSession}
+            onSelectSession={handleSelectSession}
+            onRenameSession={handleRenameSession}
+            onDeleteSession={handleDeleteSession}
+            navigate={navigate}
+            setIsSettingsOpen={setIsSettingsOpen}
+            setIsCustomInstructionsOpen={setIsCustomInstructionsOpen}
+          />
+          
+          <NarrativeFormSidebar
+            visible={rightSidebarVisible}
+            toggleSidebar={() => setRightSidebarVisible(!rightSidebarVisible)}
+            activeTab={activeTab}
+            onTabChange={setActiveTab}
+            onSubmit={() => generateNarrative({...defaultFormData, ...narrativeSettings})}
+            onOpenSettings={() => setIsSettingsOpen(true)}
+          />
+        </>
+      )}
+{/* Main Content */}
+      <div className="flex-1 flex flex-col overflow-hidden">
+        {/* Tabs */}
+        <div className={`${isMobile ? 'mt-14' : 'mt-16'} flex-1 flex flex-col overflow-hidden`}>
+          <AppTabs activeTab={activeTab} onTabChange={setActiveTab} />
+          
+          <div className="flex-1 relative overflow-hidden">
+            <Tabs value={activeTab} className="h-full">
+              <AnimatePresence mode="wait">
+                <TabsContent 
+                  value="chat" 
+                  className="h-full m-0 data-[state=active]:flex data-[state=active]:flex-col"
+                >
+                  <ChatPanel
+                    messages={!showWelcome && activeSessionData?.messages && activeSessionData.messages.length > 0 ? 
+                      activeSessionData.messages : [welcomeMessage]}
+                    userInput={userInput}
+                    setUserInput={setUserInput}
+                    handleSendMessage={handleSendMessage}
+                    isGenerating={isGenerating}
+                    isRecording={isRecording}
+                    toggleSpeechRecognition={toggleSpeechRecognition}
+                    transcript={transcript}
+                  />
+                </TabsContent>
+                
+                <TabsContent 
+                  value="ems" 
+                  className="h-full m-0 data-[state=active]:flex data-[state=active]:flex-col"
+                >
+                  <EMSPanel
+                    narrativeText={narrativeText}
+                    onGenerateNarrative={generateNarrative}
+                    defaultFormData={{...defaultFormData, ...narrativeSettings}}
+                  />
+                </TabsContent>
+                
+                <TabsContent 
+                  value="nfirs" 
+                  className="h-full m-0 data-[state=active]:flex data-[state=active]:flex-col"
+                >
+                  <NFIRSPanel
+                    reportText={nfirsReportText}
+                    onGenerateReport={generateNFIRSReport}
+                  />
+                </TabsContent>
+              </AnimatePresence>
+            </Tabs>
+          </div>
+        </div>
+      </div>
+      
+      {/* Dialogs */}
       {isSettingsOpen && (
         <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center">
           <div className={`bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg ${isMobile ? 'max-w-[95%] w-full' : 'max-w-md w-full'}`}>
