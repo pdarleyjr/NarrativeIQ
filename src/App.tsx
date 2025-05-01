@@ -10,7 +10,6 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import { isSupabaseConfigured } from "@/lib/supabase";
 import { useEffect, useState } from "react";
-import { AddToHomeBanner } from "@/components/AddToHomeBanner";
 
 // Pages
 import Index from "./pages/Index";
@@ -77,7 +76,6 @@ const App = () => {
           <Toaster />
           <Sonner />
           <OfflineNotice />
-          <AddToHomeBanner />
           <BrowserRouter>
             <Routes>
               {/* Public routes */}

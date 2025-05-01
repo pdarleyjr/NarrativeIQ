@@ -10,30 +10,31 @@
  */
 
 // Import from Outline style (lighter, stroke-based icons)
+// Import from Outline style (lighter, stroke-based icons)
 export {
   // Document related
   DocumentTextIcon,
   DocumentIcon,
   DocumentDuplicateIcon,
-  DocumentDownloadIcon,
-  DocumentAddIcon,
-  DocumentRemoveIcon,
-  DocumentReportIcon,
+  DocumentArrowDownIcon as DocumentDownloadIcon,
+  PlusCircleIcon as DocumentAddIcon,
+  MinusCircleIcon as DocumentRemoveIcon,
+  DocumentChartBarIcon as DocumentReportIcon,
   
   // Actions
   PlusIcon,
   PlusCircleIcon,
   MinusIcon,
   MinusCircleIcon,
-  XIcon,
+  XMarkIcon as XIcon,
   CheckIcon,
   CheckCircleIcon,
   
   // Navigation
   HomeIcon,
-  MenuIcon,
-  DotsHorizontalIcon,
-  DotsVerticalIcon,
+  Bars3Icon as MenuIcon,
+  EllipsisHorizontalIcon as DotsHorizontalIcon,
+  EllipsisVerticalIcon as DotsVerticalIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
   ChevronUpIcon,
@@ -42,16 +43,16 @@ export {
   // User related
   UserIcon,
   UserGroupIcon,
-  UserAddIcon,
-  UserRemoveIcon,
+  UserPlusIcon as UserAddIcon,
+  UserMinusIcon as UserRemoveIcon,
   UserCircleIcon,
   
   // UI elements
-  SearchIcon,
+  MagnifyingGlassIcon as SearchIcon,
   BellIcon,
-  CogIcon,
-  AdjustmentsIcon,
-  ExclamationIcon,
+  Cog6ToothIcon as CogIcon,
+  AdjustmentsHorizontalIcon as AdjustmentsIcon,
+  ExclamationTriangleIcon as ExclamationIcon,
   ExclamationCircleIcon,
   InformationCircleIcon,
   QuestionMarkCircleIcon,
@@ -61,38 +62,38 @@ export {
   // Data visualization
   ChartBarIcon,
   ChartPieIcon,
-  ChartSquareBarIcon,
+  TableCellsIcon as ChartSquareBarIcon,
   
   // Communication
-  MailIcon,
-  ChatIcon,
-  ChatAltIcon,
+  EnvelopeIcon as MailIcon,
+  ChatBubbleLeftIcon as ChatIcon,
+  ChatBubbleLeftEllipsisIcon as ChatAltIcon,
   
   // Misc
   ClockIcon,
   CalendarIcon,
-  LocationMarkerIcon,
-  GlobeIcon,
+  MapPinIcon as LocationMarkerIcon,
+  GlobeAltIcon as GlobeIcon,
   ShieldCheckIcon,
-  LightningBoltIcon,
+  BoltIcon as LightningBoltIcon,
   FireIcon,
   HeartIcon,
   StarIcon,
   BookmarkIcon,
   TagIcon,
   FolderIcon,
-  DownloadIcon,
-  UploadIcon,
-  RefreshIcon,
-  SaveIcon,
+  ArrowDownTrayIcon as DownloadIcon,
+  ArrowUpTrayIcon as UploadIcon,
+  ArrowPathIcon as RefreshIcon,
+  BookmarkSquareIcon as SaveIcon,
   TrashIcon,
   PencilIcon,
-  PencilAltIcon,
+  PencilSquareIcon as PencilAltIcon,
   EyeIcon,
-  EyeOffIcon,
+  EyeSlashIcon as EyeOffIcon,
   LockClosedIcon,
   LockOpenIcon
-} from '@heroicons/react/outline';
+} from '@heroicons/react/24/outline';
 
 // Import from Solid style (filled icons)
 // Use the 'Solid' variants for active states, selected items, etc.
@@ -115,9 +116,9 @@ export {
   UserCircleIcon as UserCircleIconSolid,
   
   // UI elements
-  SearchIcon as SearchIconSolid,
+  MagnifyingGlassIcon as SearchIconSolid,
   BellIcon as BellIconSolid,
-  CogIcon as CogIconSolid,
+  Cog6ToothIcon as CogIconSolid,
   MoonIcon as MoonIconSolid,
   SunIcon as SunIconSolid,
   
@@ -129,4 +130,4 @@ export {
   BookmarkIcon as BookmarkIconSolid,
   HeartIcon as HeartIconSolid,
   FireIcon as FireIconSolid
-} from '@heroicons/react/solid';
+} from '@heroicons/react/24/solid';

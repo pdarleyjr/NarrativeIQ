@@ -2,7 +2,6 @@
 import { createRoot } from 'react-dom/client';
 import App from './App.tsx';
 import './index.css';
-import { Workbox } from 'workbox-window';
 
 // Global error handler
 window.addEventListener('error', (event) => {
@@ -15,23 +14,6 @@ window.addEventListener('unhandledrejection', (event) => {
 });
 
 console.log('Application starting...');
-
-// Register service worker for PWA support
-if ('serviceWorker' in navigator && import.meta.env.PROD) {
-  const wb = new Workbox('/sw.js');
-  
-  wb.addEventListener('installed', (event) => {
-    if (event.isUpdate) {
-      if (confirm('New version available! Reload to update?')) {
-        window.location.reload();
-      }
-    }
-  });
-
-  wb.register()
-    .then(() => console.log('Service worker registered'))
-    .catch(error => console.error('Service worker registration failed:', error));
-}
 
 try {
   const rootElement = document.getElementById("root");

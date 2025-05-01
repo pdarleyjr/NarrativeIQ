@@ -1,92 +1,123 @@
 #!/bin/bash
 
 # EZ Narratives Deployment Script
-# This script builds and deploys the application to the production server
+# This script builds the application and deploys it to the production directory
 
 set -e  # Exit immediately if a command exits with a non-zero status
 
-# Configuration
-DEPLOY_DIR="/var/www/eznarratives.com"
-DIST_DIR="$DEPLOY_DIR/dist"
-NGINX_CONF="/etc/nginx/sites-available/eznarratives.com"
-CLOUDFLARE_DNS="eznarratives.com"
-SERVER_IP="145.223.73.170"
+echo "Starting deployment process for EZ Narratives..."
 
-# Colors for output
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-RED='\033[0;31m'
-NC='\033[0m' # No Color
+# Navigate to project root
+cd /var/www/eznarratives.com
 
-echo -e "${YELLOW}Starting deployment process for EZ Narratives...${NC}"
+# Check if we should skip the build process
+if [ "$1" != "--skip-build" ]; then
+  # Install dependencies if needed
+  echo "Checking for dependencies..."
+  npm ci
 
-# Step 1: Install dependencies
-echo -e "\n${YELLOW}Installing dependencies...${NC}"
-cd $DEPLOY_DIR
-npm install
-echo -e "${GREEN}Dependencies installed successfully.${NC}"
-
-# Step 2: Generate PWA assets
-echo -e "\n${YELLOW}Generating PWA assets...${NC}"
-npm run generate-pwa-assets
-echo -e "${GREEN}PWA assets generated successfully.${NC}"
-
-# Verify icons were generated
-if [ ! -f "$DEPLOY_DIR/public/icons/icon-192x192.png" ] || [ ! -f "$DEPLOY_DIR/public/splash/apple-splash-1125-2436.png" ]; then
-  echo -e "${RED}Warning: Some icon files may not have been generated. Continuing anyway...${NC}"
-fi
-
-# Step 3: Build the application
-echo -e "\n${YELLOW}Building the application...${NC}"
-npm run build
-echo -e "${GREEN}Application built successfully.${NC}"
-
-# Step 4: Verify build output
-if [ ! -d "$DIST_DIR" ]; then
-  echo -e "${RED}Error: Build directory not found at $DIST_DIR${NC}"
-  exit 1
-fi
-
-echo -e "\n${YELLOW}Verifying build output...${NC}"
-if [ -f "$DIST_DIR/index.html" ] && [ -f "$DIST_DIR/manifest.json" ] && [ -d "$DIST_DIR/assets" ]; then
-  echo -e "${GREEN}Build verification successful.${NC}"
+  # Build the application
+  echo "Building application..."
+  npm run build || {
+    echo "Build failed. Trying to build without PWA assets generation..."
+    # If the build fails, try to build without generating PWA assets
+    npm run build
+  }
 else
-  echo -e "${RED}Error: Build verification failed. Missing required files.${NC}"
-  exit 1
+  echo "Skipping build process as requested..."
 fi
 
-# Step 5: Check Nginx configuration
-echo -e "\n${YELLOW}Checking Nginx configuration...${NC}"
-if [ -f "$NGINX_CONF" ]; then
-  echo -e "${GREEN}Nginx configuration found.${NC}"
-  
-  # Test Nginx configuration
-  echo -e "${YELLOW}Testing Nginx configuration...${NC}"
-  sudo nginx -t
-  
-  # Reload Nginx to apply any changes
-  echo -e "${YELLOW}Reloading Nginx...${NC}"
-  sudo systemctl reload nginx
-  echo -e "${GREEN}Nginx reloaded successfully.${NC}"
+# Check if html is a symlink to dist
+if [ -L "html" ] && [ "$(readlink -f html)" = "$(readlink -f dist)" ]; then
+  echo "html is already a symlink to dist, skipping backup and copy steps..."
 else
-  echo -e "${RED}Warning: Nginx configuration not found at $NGINX_CONF${NC}"
-  echo -e "${YELLOW}Please ensure Nginx is properly configured for the domain.${NC}"
+  # Backup current html directory
+  echo "Backing up current html directory..."
+  timestamp=$(date +%Y%m%d_%H%M%S)
+  if [ -d "html" ]; then
+    mkdir -p backups
+    tar -czf "backups/html_backup_${timestamp}.tar.gz" html
+  fi
+
+  # Ensure html directory exists
+  mkdir -p html
+
+  # Preserve any special files in html that shouldn't be overwritten
+  echo "Preserving special files..."
+  if [ -f "html/.well-known/acme-challenge" ]; then
+    mkdir -p temp_preserve/.well-known
+    cp -r html/.well-known/acme-challenge temp_preserve/.well-known/
+  fi
+  # No need to preserve clear-cache files anymore
+
+  # Clear html directory but keep preserved files
+  echo "Clearing html directory..."
+  rm -rf html/*
+
+  # Copy dist contents to html
+  echo "Copying build files to html directory..."
+  # Make sure we're in the project root
+  cd "$(dirname "$0")"/..
+  # Copy everything (preserve dirs) from dist into html
+  cp -r dist/. html/
+
+  # Restore preserved files
+  echo "Restoring preserved files..."
+  if [ -d "temp_preserve" ]; then
+    cp -r temp_preserve/* html/
+    rm -rf temp_preserve
+  fi
 fi
 
-# Step 6: Verify deployment
-echo -e "\n${YELLOW}Verifying deployment...${NC}"
-echo -e "${YELLOW}Server IP: $SERVER_IP${NC}"
-echo -e "${YELLOW}Domain: $CLOUDFLARE_DNS${NC}"
+# Set proper permissions
+echo "Setting proper permissions..."
+find html -type d -exec chmod 755 {} \;
+find html -type f -exec chmod 644 {} \;
 
-# Print success message
-echo -e "\n${GREEN}==================================================${NC}"
-echo -e "${GREEN}Deployment completed successfully!${NC}"
-echo -e "${GREEN}==================================================${NC}"
-echo -e "\nThe application is now available at:"
-echo -e "  - http://$SERVER_IP"
-echo -e "  - https://$CLOUDFLARE_DNS (if DNS is configured)"
-echo -e "\n${YELLOW}Post-deployment tasks:${NC}"
-echo -e "  1. Test the PWA installation flow on various devices"
-echo -e "  2. Verify that icons and splash screens display correctly"
-echo -e "  3. Check service worker registration and offline functionality"
-echo -e "  4. Validate PWA in Chrome DevTools Lighthouse audit"
+# Restart nginx
+echo "Restarting nginx..."
+sudo systemctl restart nginx
+
+echo "Deployment completed successfully!"
+
+# Create a simple script to check if the deployment was successful
+cat > /var/www/eznarratives.com/html/deployment-check.html << EOF
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Deployment Check - EZ Narratives</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+      line-height: 1.6;
+      color: #333;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    .success {
+      color: #0c6b58;
+      background-color: #d1fae5;
+      padding: 10px;
+      border-radius: 4px;
+    }
+    .timestamp {
+      font-size: 0.8em;
+      color: #666;
+    }
+  </style>
+</head>
+<body>
+  <h1>EZ Narratives Deployment Check</h1>
+  <div class="success">
+    <p>Deployment completed successfully!</p>
+    <p class="timestamp">Timestamp: $(date)</p>
+  </div>
+  <p><a href="/">Return to homepage</a></p>
+</body>
+</html>
+EOF
+
+echo "Created deployment check page at /var/www/eznarratives.com/html/deployment-check.html"

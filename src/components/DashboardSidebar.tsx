@@ -107,8 +107,8 @@ const DashboardSidebar = ({
   }, {} as Record<string, Session[]>);
 
   return (
-    <div 
-      className={`fixed inset-y-0 left-0 w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 pt-16 z-10 transform transition-transform duration-300 ease-in-out ${
+    <div
+      className={`fixed inset-y-0 left-0 w-60 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 pt-16 z-10 transform transition-transform duration-300 ease-in-out ${
         visible ? 'translate-x-0' : '-translate-x-full'
       }`}
       aria-label="Dashboard sidebar"
