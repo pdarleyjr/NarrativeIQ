@@ -1,0 +1,88 @@
+name: Android CI/CD
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+        
+    - name: Set up JDK
+      uses: actions/setup-java@v3
+      with:
+        distribution: 'temurin'
+        java-version: '11'
+        
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install buildozer
+        
+    - name: Install system dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y \
+          build-essential \
+          ccache \
+          cmake \
+          git \
+          libffi-dev \
+          libltdl-dev \
+          libsdl2-dev \
+          libsdl2-image-dev \
+          libsdl2-mixer-dev \
+          libsdl2-ttf-dev \
+          libssl-dev \
+          libtool \
+          pkg-config \
+          python3-dev \
+          python3-pip \
+          python3-setuptools \
+          zip \
+          zlib1g-dev
+          
+    - name: Install Android SDK
+      run: |
+        sudo apt-get install -y \
+          openjdk-11-jdk \
+          autoconf \
+          automake \
+          libtool \
+          libltdl-dev \
+          libffi-dev
+        
+    - name: Build Android APK
+      run: |
+        buildozer -v android debug
+        
+    - name: Sign APK
+      uses: r0adkll/sign-android-release@v1
+      with:
+        releaseDirectory: bin/
+        signingKeyBase64: ${{ secrets.ANDROID_SIGNING_KEY }}
+        alias: ${{ secrets.ANDROID_ALIAS }}
+        keyStorePassword: ${{ secrets.ANDROID_KEY_STORE_PASSWORD }}
+        keyPassword: ${{ secrets.ANDROID_KEY_PASSWORD }}
+      env:
+        BUILD_TOOLS_VERSION: "30.0.2"
+        
+    - name: Upload to Google Play
+      uses: r0adkll/upload-google-play@v1
+      with:
+        serviceAccountJsonPlainText: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
+        packageName: com.eznarratives.app
+        releaseFiles: bin/eznarratives-*-signed.apk
+        track: internal
+        status: completed

@@ -1,0 +1,14 @@
+This is a placeholder for the logo file.
+
+In a production environment, replace this with:
+- logo.png - Main logo image
+- logo.svg - Vector version of the logo
+- icon.ico - Windows icon
+- icon.icns - macOS icon
+
+The logo should represent EZ Narratives branding with a design that suggests:
+- Medical/EMS themes
+- Fire service themes
+- Document/narrative creation
+- Modern, professional appearance
+- Color scheme matching the application (indigo primary color)

@@ -54,10 +54,15 @@ async function withExponentialBackoff<T>(
 
 serve(async (req) => {
   try {
-    // CORS headers
+    // Get the origin from the request
+    const origin = req.headers.get('origin') || '*';
+    
+    // Production CORS headers - restrict to specific domains
     const headers = {
-      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Origin': origin,
       'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+      'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+      'Access-Control-Allow-Credentials': 'true',
       'Content-Type': 'application/json',
     };
 

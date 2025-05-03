@@ -1,0 +1,518 @@
+#:kivy 2.2.1
+#:import Window kivy.core.window.Window
+
+<LoginScreen>:
+    name: 'login'
+    BoxLayout:
+        orientation: 'vertical'
+        padding: dp(20)
+        spacing: dp(20)
+        
+        MDLabel:
+            text: 'EZ Narratives'
+            font_style: 'Display'
+            role: 'large'
+            halign: 'center'
+            size_hint_y: None
+            height: self.texture_size[1]
+            padding_y: dp(20)
+        
+        MDTextField:
+            id: email
+            hint_text: "Email"
+            helper_text: "Enter your email"
+            helper_text_mode: "on_focus"
+            icon_right: "email"
+            size_hint_x: None
+            width: "300dp"
+            font_size: "18sp"
+            pos_hint: {"center_x": .5}
+            on_text: app.session_state.set_email(self.text)
+        
+        MDTextField:
+            id: password
+            hint_text: "Password"
+            helper_text: "Enter your password"
+            helper_text_mode: "on_focus"
+            icon_right: "eye-off"
+            size_hint_x: None
+            width: "300dp"
+            font_size: "18sp"
+            pos_hint: {"center_x": .5}
+            password: True
+            on_text: app.session_state.set_password(self.text)
+        
+        Widget:
+            size_hint_y: None
+            height: "40dp"
+        
+        MDButton:
+            text: "LOGIN"
+            pos_hint: {"center_x": .5}
+            size_hint_x: None
+            width: "200dp"
+            on_release: root.login()
+        
+        MDButton:
+            text: "SIGN UP"
+            pos_hint: {"center_x": .5}
+            size_hint_x: None
+            width: "200dp"
+            on_release: root.manager.current = 'signup'
+        
+        Widget:
+            size_hint_y: 1
+
+<SignupScreen>:
+    name: 'signup'
+    BoxLayout:
+        orientation: 'vertical'
+        padding: dp(20)
+        spacing: dp(20)
+        
+        MDLabel:
+            text: 'Create Account'
+            font_style: 'Display'
+            role: 'large'
+            halign: 'center'
+            size_hint_y: None
+            height: self.texture_size[1]
+            padding_y: dp(20)
+        
+        MDTextField:
+            id: name
+            hint_text: "Full Name"
+            helper_text: "Enter your full name"
+            helper_text_mode: "on_focus"
+            icon_right: "account"
+            size_hint_x: None
+            width: "300dp"
+            font_size: "18sp"
+            pos_hint: {"center_x": .5}
+            on_text: app.session_state.set_name(self.text)
+        
+        MDTextField:
+            id: email
+            hint_text: "Email"
+            helper_text: "Enter your email"
+            helper_text_mode: "on_focus"
+            icon_right: "email"
+            size_hint_x: None
+            width: "300dp"
+            font_size: "18sp"
+            pos_hint: {"center_x": .5}
+            on_text: app.session_state.set_email(self.text)
+        
+        MDTextField:
+            id: password
+            hint_text: "Password"
+            helper_text: "Enter your password"
+            helper_text_mode: "on_focus"
+            icon_right: "eye-off"
+            size_hint_x: None
+            width: "300dp"
+            font_size: "18sp"
+            pos_hint: {"center_x": .5}
+            password: True
+            on_text: app.session_state.set_password(self.text)
+        
+        MDTextField:
+            id: confirm_password
+            hint_text: "Confirm Password"
+            helper_text: "Confirm your password"
+            helper_text_mode: "on_focus"
+            icon_right: "eye-off"
+            size_hint_x: None
+            width: "300dp"
+            font_size: "18sp"
+            pos_hint: {"center_x": .5}
+            password: True
+            on_text: app.session_state.set_confirm_password(self.text)
+        
+        Widget:
+            size_hint_y: None
+            height: "20dp"
+        
+        MDButton:
+            text: "CREATE ACCOUNT"
+            pos_hint: {"center_x": .5}
+            size_hint_x: None
+            width: "200dp"
+            on_release: root.signup()
+        
+        MDButton:
+            text: "BACK TO LOGIN"
+            pos_hint: {"center_x": .5}
+            size_hint_x: None
+            width: "200dp"
+            on_release: root.manager.current = 'login'
+        
+        Widget:
+            size_hint_y: 1
+
+<SettingsScreen>:
+    name: 'settings'
+    BoxLayout:
+        orientation: 'vertical'
+        
+        MDTopAppBar:
+            title: "Settings"
+            elevation: 4
+            left_action_items: [["arrow-left", lambda x: root.back_to_dashboard()]]
+            right_action_items: [["theme-light-dark", lambda x: app.toggle_theme()]]
+        
+        ScrollView:
+            do_scroll_x: False
+            
+            BoxLayout:
+                orientation: 'vertical'
+                size_hint_y: None
+                height: self.minimum_height
+                padding: dp(20)
+                spacing: dp(20)
+                
+                # Account Settings
+                MDCard:
+                    orientation: 'vertical'
+                    padding: dp(16)
+                    size_hint_y: None
+                    height: account_layout.height + dp(32)
+                    
+                    BoxLayout:
+                        id: account_layout
+                        orientation: 'vertical'
+                        size_hint_y: None
+                        height: self.minimum_height
+                        spacing: dp(16)
+                        
+                        MDLabel:
+                            text: "Account Settings"
+                            font_style: 'Title'
+                            role: 'large'
+                            size_hint_y: None
+                            height: self.texture_size[1]
+                        
+                        MDTextField:
+                            id: user_name
+                            hint_text: "Full Name"
+                            helper_text: "Your full name"
+                            helper_text_mode: "on_focus"
+                            on_text: app.session_state.set_user_name(self.text)
+                        
+                        MDTextField:
+                            id: user_email
+                            hint_text: "Email"
+                            helper_text: "Your email address"
+                            helper_text_mode: "on_focus"
+                            disabled: True
+                        
+                        MDDivider:
+                            height: dp(1)
+                        
+                        MDLabel:
+                            text: "Change Password"
+                            font_style: 'Title'
+                            role: 'medium'
+                            size_hint_y: None
+                            height: self.texture_size[1]
+                        
+                        MDTextField:
+                            id: current_password
+                            hint_text: "Current Password"
+                            password: True
+                            helper_text: "Enter your current password"
+                            helper_text_mode: "on_focus"
+                            on_text: app.session_state.set_current_password(self.text)
+                        
+                        MDTextField:
+                            id: new_password
+                            hint_text: "New Password"
+                            password: True
+                            helper_text: "Enter your new password"
+                            helper_text_mode: "on_focus"
+                            on_text: app.session_state.set_new_password(self.text)
+                        
+                        MDTextField:
+                            id: confirm_new_password
+                            hint_text: "Confirm New Password"
+                            password: True
+                            helper_text: "Confirm your new password"
+                            helper_text_mode: "on_focus"
+                            on_text: app.session_state.set_confirm_new_password(self.text)
+                        
+                        MDButton:
+                            text: "UPDATE PASSWORD"
+                            pos_hint: {"center_x": .5}
+                            on_release: root.update_password()
+                
+                # Appearance Settings
+                MDCard:
+                    orientation: 'vertical'
+                    padding: dp(16)
+                    size_hint_y: None
+                    height: appearance_layout.height + dp(32)
+                    
+                    BoxLayout:
+                        id: appearance_layout
+                        orientation: 'vertical'
+                        size_hint_y: None
+                        height: self.minimum_height
+                        spacing: dp(16)
+                        
+                        MDLabel:
+                            text: "Appearance"
+                            font_style: 'Title'
+                            role: 'large'
+                            size_hint_y: None
+                            height: self.texture_size[1]
+                        
+                        BoxLayout:
+                            orientation: 'horizontal'
+                            size_hint_y: None
+                            height: dp(48)
+                            
+                            MDLabel:
+                                text: "Theme"
+                                size_hint_x: 0.5
+                            
+                            MDSwitch:
+                                id: theme_switch
+                                active: app.theme_cls.theme_style == "Dark"
+                                on_active: app.toggle_theme()
+                            
+                            MDLabel:
+                                text: "Dark" if theme_switch.active else "Light"
+                                size_hint_x: 0.3
+                        
+                        BoxLayout:
+                            orientation: 'horizontal'
+                            size_hint_y: None
+                            height: dp(48)
+                            
+                            MDLabel:
+                                text: "Font Size"
+                                size_hint_x: 0.5
+                            
+                            Spinner:
+                                id: font_size_spinner
+                                text: "Medium"
+                                values: ["Small", "Medium", "Large"]
+                                size_hint_x: 0.5
+                                on_text: app.ui_state.set_font_size(self.text)
+                
+                # Notification Settings
+                MDCard:
+                    orientation: 'vertical'
+                    padding: dp(16)
+                    size_hint_y: None
+                    height: notification_layout.height + dp(32)
+                    
+                    BoxLayout:
+                        id: notification_layout
+                        orientation: 'vertical'
+                        size_hint_y: None
+                        height: self.minimum_height
+                        spacing: dp(16)
+                        
+                        MDLabel:
+                            text: "Notifications"
+                            font_style: 'Title'
+                            role: 'large'
+                            size_hint_y: None
+                            height: self.texture_size[1]
+                        
+                        BoxLayout:
+                            orientation: 'horizontal'
+                            size_hint_y: None
+                            height: dp(48)
+                            
+                            MDLabel:
+                                text: "Email Notifications"
+                                size_hint_x: 0.7
+                            
+                            MDSwitch:
+                                id: email_notifications_switch
+                                active: True
+                                on_active: app.ui_state.toggle_email_notifications()
+                        
+                        BoxLayout:
+                            orientation: 'horizontal'
+                            size_hint_y: None
+                            height: dp(48)
+                            
+                            MDLabel:
+                                text: "Push Notifications"
+                                size_hint_x: 0.7
+                            
+                            MDSwitch:
+                                id: push_notifications_switch
+                                active: True
+                                on_active: app.ui_state.toggle_push_notifications()
+                
+                # Save Button
+                MDButton:
+                    text: "SAVE SETTINGS"
+                    pos_hint: {"center_x": .5}
+                    size_hint_x: None
+                    width: "200dp"
+                    on_release: root.save_settings()
+
+<DashboardScreen>:
+    name: 'dashboard'
+    BoxLayout:
+        orientation: 'vertical'
+        
+        MDTopAppBar:
+            title: "EZ Narratives"
+            elevation: 4
+            left_action_items: [["menu", lambda x: app.toggle_nav_drawer()]]
+            right_action_items: [["theme-light-dark", lambda x: app.toggle_theme()], ["cog", lambda x: app.open_settings()]]
+        
+        MDTabsPrimary:
+            id: tabs
+            on_tab_switch: root.on_tab_switch(*args)
+            
+            MDTabsItem:
+                title: "Chat"
+                icon: "message-text"
+                
+                BoxLayout:
+                    orientation: 'vertical'
+                    padding: dp(10)
+                    
+                    ScrollView:
+                        id: chat_scroll
+                        do_scroll_x: False
+                        
+                        MDList:
+                            id: chat_messages
+                            spacing: dp(10)
+                            padding: dp(10)
+                    
+                    BoxLayout:
+                        orientation: 'horizontal'
+                        size_hint_y: None
+                        height: dp(60)
+                        padding: dp(5)
+                        
+                        MDTextField:
+                            id: chat_input
+                            hint_text: "Type your message..."
+                            multiline: False
+                            size_hint_x: 0.8
+                            on_text_validate: root.send_message()
+                        
+                        MDIconButton:
+                            icon: "send"
+                            pos_hint: {"center_y": .5}
+                            on_release: root.send_message()
+            
+            MDTabsItem:
+                title: "EMS"
+                icon: "medical-bag"
+                
+                BoxLayout:
+                    orientation: 'vertical'
+                    padding: dp(10)
+                    
+                    ScrollView:
+                        id: ems_scroll
+                        do_scroll_x: False
+                        
+                        BoxLayout:
+                            orientation: 'vertical'
+                            size_hint_y: None
+                            height: self.minimum_height
+                            padding: dp(10)
+                            spacing: dp(10)
+                            
+                            MDCard:
+                                orientation: 'vertical'
+                                padding: dp(10)
+                                size_hint_y: None
+                                height: narrative_text.height + dp(40)
+                                
+                                MDLabel:
+                                    id: narrative_text
+                                    text: "Generated narrative will appear here..."
+                                    size_hint_y: None
+                                    height: self.texture_size[1]
+                                    text_size: self.width, None
+                            
+                            # EMS Form sections will be added dynamically
+                            
+                            MDButton:
+                                text: "GENERATE NARRATIVE"
+                                pos_hint: {"center_x": .5}
+                                size_hint_x: None
+                                width: "250dp"
+                                on_release: root.generate_ems_narrative()
+            
+            MDTabsItem:
+                title: "Fire"
+                icon: "fire"
+                
+                BoxLayout:
+                    orientation: 'vertical'
+                    padding: dp(10)
+                    
+                    ScrollView:
+                        id: fire_scroll
+                        do_scroll_x: False
+                        
+                        BoxLayout:
+                            orientation: 'vertical'
+                            size_hint_y: None
+                            height: self.minimum_height
+                            padding: dp(10)
+                            spacing: dp(10)
+                            
+                            MDCard:
+                                orientation: 'vertical'
+                                padding: dp(10)
+                                size_hint_y: None
+                                height: fire_narrative_text.height + dp(40)
+                                
+                                MDLabel:
+                                    id: fire_narrative_text
+                                    text: "Generated fire narrative will appear here..."
+                                    size_hint_y: None
+                                    height: self.texture_size[1]
+                                    text_size: self.width, None
+                            
+                            # Fire Form sections will be added dynamically
+                            
+                            MDButton:
+                                text: "GENERATE FIRE REPORT"
+                                pos_hint: {"center_x": .5}
+                                size_hint_x: None
+                                width: "250dp"
+                                on_release: root.generate_fire_narrative()
+
+<MDTabsItem>:
+    MDLabel:
+        id: content
+        text: ""
+        halign: "center"
+
+<MessageCard>:
+    orientation: "vertical"
+    size_hint_y: None
+    height: self.minimum_height
+    padding: dp(10)
+    spacing: dp(5)
+    
+    MDLabel:
+        id: message_content
+        text: root.content
+        size_hint_y: None
+        height: self.texture_size[1]
+        text_size: self.width, None
+    
+    MDLabel:
+        id: message_info
+        text: root.sender + " • " + root.timestamp
+        theme_text_color: "Secondary"
+        font_style: "Caption"
+        size_hint_y: None
+        height: self.texture_size[1]

@@ -1,0 +1,16 @@
+{
+  "name": "eznarratives-e2e-tests",
+  "version": "1.0.0",
+  "description": "End-to-End tests for EZ Narratives",
+  "main": "test_e2e.js",
+  "scripts": {
+    "test": "node test_e2e.js"
+  },
+  "dependencies": {
+    "dotenv": "^16.0.3",
+    "puppeteer": "^19.7.2"
+  },
+  "devDependencies": {
+    "@types/node": "^18.14.6"
+  }
+}

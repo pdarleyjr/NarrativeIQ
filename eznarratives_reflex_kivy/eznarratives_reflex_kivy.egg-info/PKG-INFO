@@ -1,0 +1,10 @@
+Metadata-Version: 2.4
+Name: eznarratives_reflex_kivy
+Version: 0.1.0
+Requires-Dist: reflex
+Requires-Dist: kivy
+Requires-Dist: kivymd
+Requires-Dist: supabase
+Requires-Dist: openai
+Requires-Dist: python-dotenv
+Dynamic: requires-dist

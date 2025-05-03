@@ -1,0 +1,6 @@
+reflex
+kivy
+kivymd
+supabase
+openai
+python-dotenv
